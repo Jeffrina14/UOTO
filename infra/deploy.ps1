@@ -114,6 +114,23 @@ $StorageName = if ($env:STORAGE_NAME) { $env:STORAGE_NAME } else { "" }
 $VnetReuse = if ($env:VNET_REUSE) { $env:VNET_REUSE } else { "false" }
 $VnetResourceGroupName = if ($env:VNET_RESOURCE_GROUP_NAME) { $env:VNET_RESOURCE_GROUP_NAME } else { "" }
 $VnetName = if ($env:VNET_NAME) { $env:VNET_NAME } else { "" }
+$AiSubnetName = if ($env:AI_SUBNET_NAME) { $env:AI_SUBNET_NAME } else { "aiSubnet" }
+$AppServicesSubnetName = if ($env:APP_SERVICES_SUBNET_NAME) { $env:APP_SERVICES_SUBNET_NAME } else { "appServicesSubnet" }
+$DatabaseSubnetName = if ($env:DATABASE_SUBNET_NAME) { $env:DATABASE_SUBNET_NAME } else { "databaseSubnet" }
+$ExistingBastionHostResourceId = if ($env:EXISTING_BASTION_HOST_RESOURCE_ID) { $env:EXISTING_BASTION_HOST_RESOURCE_ID } else { "" }
+$ExistingAutomationPrivateDnsZoneResourceId = if ($env:EXISTING_AUTOMATION_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_AUTOMATION_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingOdsPrivateDnsZoneResourceId = if ($env:EXISTING_ODS_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_ODS_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingOmsPrivateDnsZoneResourceId = if ($env:EXISTING_OMS_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_OMS_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingCognitiveServicesPrivateDnsZoneResourceId = if ($env:EXISTING_COGNITIVE_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_COGNITIVE_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingOpenAiPrivateDnsZoneResourceId = if ($env:EXISTING_OPENAI_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_OPENAI_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingAiServicesPrivateDnsZoneResourceId = if ($env:EXISTING_AI_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_AI_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingDocumentsPrivateDnsZoneResourceId = if ($env:EXISTING_DOCUMENTS_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_DOCUMENTS_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingKeyVaultPrivateDnsZoneResourceId = if ($env:EXISTING_KEY_VAULT_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_KEY_VAULT_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingAzureMonitorPrivateDnsZoneResourceId = if ($env:EXISTING_AZURE_MONITOR_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_AZURE_MONITOR_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingBlobPrivateDnsZoneResourceId = if ($env:EXISTING_BLOB_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_BLOB_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingQueuePrivateDnsZoneResourceId = if ($env:EXISTING_QUEUE_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_QUEUE_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingTablePrivateDnsZoneResourceId = if ($env:EXISTING_TABLE_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_TABLE_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
+$ExistingFilePrivateDnsZoneResourceId = if ($env:EXISTING_FILE_PRIVATE_DNS_ZONE_RESOURCE_ID) { $env:EXISTING_FILE_PRIVATE_DNS_ZONE_RESOURCE_ID } else { "" }
 
 $OrchestratorFunctionAppReuse = if ($env:ORCHESTRATOR_FUNCTION_APP_REUSE) { $env:ORCHESTRATOR_FUNCTION_APP_REUSE } else { "false" }
 $OrchestratorFunctionAppResourceGroupName = if ($env:ORCHESTRATOR_FUNCTION_APP_RESOURCE_GROUP_NAME) { $env:ORCHESTRATOR_FUNCTION_APP_RESOURCE_GROUP_NAME } else { "" }
@@ -240,6 +257,9 @@ function Start-BicepDeployment {
         multiModal = $script:AoaiMultiModal
         functionAppHostPlan = $script:FunctionAppHostPlan
         functionAppSKU = $script:FunctionAppSku
+        aiSubnetName = $script:AiSubnetName
+        appServicesSubnetName = $script:AppServicesSubnetName
+        databaseSubnetName = $script:DatabaseSubnetName
     }
     
     # Add VM password if needed
@@ -279,6 +299,20 @@ function Start-BicepDeployment {
         vnetReuse = $script:VnetReuse
         existingVnetResourceGroupName = $script:VnetResourceGroupName
         existingVnetName = $script:VnetName
+        existingBastionHostResourceId = $script:ExistingBastionHostResourceId
+        existingAutomationPrivateDnsZoneResourceId = $script:ExistingAutomationPrivateDnsZoneResourceId
+        existingOdsPrivateDnsZoneResourceId = $script:ExistingOdsPrivateDnsZoneResourceId
+        existingOmsPrivateDnsZoneResourceId = $script:ExistingOmsPrivateDnsZoneResourceId
+        existingCognitiveServicesPrivateDnsZoneResourceId = $script:ExistingCognitiveServicesPrivateDnsZoneResourceId
+        existingOpenAiPrivateDnsZoneResourceId = $script:ExistingOpenAiPrivateDnsZoneResourceId
+        existingAiServicesPrivateDnsZoneResourceId = $script:ExistingAiServicesPrivateDnsZoneResourceId
+        existingDocumentsPrivateDnsZoneResourceId = $script:ExistingDocumentsPrivateDnsZoneResourceId
+        existingKeyVaultPrivateDnsZoneResourceId = $script:ExistingKeyVaultPrivateDnsZoneResourceId
+        existingAzureMonitorPrivateDnsZoneResourceId = $script:ExistingAzureMonitorPrivateDnsZoneResourceId
+        existingBlobPrivateDnsZoneResourceId = $script:ExistingBlobPrivateDnsZoneResourceId
+        existingQueuePrivateDnsZoneResourceId = $script:ExistingQueuePrivateDnsZoneResourceId
+        existingTablePrivateDnsZoneResourceId = $script:ExistingTablePrivateDnsZoneResourceId
+        existingFilePrivateDnsZoneResourceId = $script:ExistingFilePrivateDnsZoneResourceId
         orchestratorFunctionAppReuse = $script:OrchestratorFunctionAppReuse
         existingOrchestratorFunctionAppResourceGroupName = $script:OrchestratorFunctionAppResourceGroupName
         existingOrchestratorFunctionAppName = $script:OrchestratorFunctionAppName

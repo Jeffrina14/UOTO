@@ -38,6 +38,18 @@
       "aoaiLocation": {
         "value": "${AOAI_LOCATION}"
       },
+      "vmCustomScriptBootstrap": {
+        "value": "${AZURE_VM_CUSTOM_SCRIPT_BOOTSTRAP}"
+      },
+      "aiSubnetName": {
+        "value": "${AI_SUBNET_NAME}"
+      },
+      "appServicesSubnetName": {
+        "value": "${APP_SERVICES_SUBNET_NAME}"
+      },
+      "databaseSubnetName": {
+        "value": "${DATABASE_SUBNET_NAME}"
+      },
       "azureReuseConfig":{
         "value": {
           "aoaiReuse": "${AOAI_REUSE}",
@@ -84,7 +96,21 @@
           "existingStorageName": "${STORAGE_NAME}",
           "vnetReuse": "${VNET_REUSE}",
           "existingVnetResourceGroupName": "${VNET_RESOURCE_GROUP_NAME}",
-          "existingVnetName": "${VNET_NAME}"
+          "existingVnetName": "${VNET_NAME}",
+          "existingBastionHostResourceId": "${EXISTING_BASTION_HOST_RESOURCE_ID}",
+          "existingAutomationPrivateDnsZoneResourceId": "${EXISTING_AUTOMATION_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingOdsPrivateDnsZoneResourceId": "${EXISTING_ODS_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingOmsPrivateDnsZoneResourceId": "${EXISTING_OMS_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingCognitiveServicesPrivateDnsZoneResourceId": "${EXISTING_COGNITIVE_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingOpenAiPrivateDnsZoneResourceId": "${EXISTING_OPENAI_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingAiServicesPrivateDnsZoneResourceId": "${EXISTING_AI_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingDocumentsPrivateDnsZoneResourceId": "${EXISTING_DOCUMENTS_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingKeyVaultPrivateDnsZoneResourceId": "${EXISTING_KEY_VAULT_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingAzureMonitorPrivateDnsZoneResourceId": "${EXISTING_AZURE_MONITOR_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingBlobPrivateDnsZoneResourceId": "${EXISTING_BLOB_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingQueuePrivateDnsZoneResourceId": "${EXISTING_QUEUE_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingTablePrivateDnsZoneResourceId": "${EXISTING_TABLE_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingFilePrivateDnsZoneResourceId": "${EXISTING_FILE_PRIVATE_DNS_ZONE_RESOURCE_ID}"
         }
       }	
     }

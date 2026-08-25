@@ -87,6 +87,23 @@ export STORAGE_NAME=mystorageaccount
 ./deploy.sh
 ```
 
+**Reusing the existing private networking resources already in the target resource group:**
+```bash
+export VNET_REUSE=true
+export VNET_RESOURCE_GROUP_NAME=P277VPPRV-CC-ADCO-RG01
+export VNET_NAME=P277VPPRV-CC-VNET01
+export AI_SUBNET_NAME=P277-VPPRV-CC-URO-AI-SharedPE
+export APP_SERVICES_SUBNET_NAME=P277-VPPRV-CC-URO-AI-FunctionIntegration
+export DATABASE_SUBNET_NAME=P277-VPPRV-CC-URO-AI-SharedPE
+export EXISTING_BASTION_HOST_RESOURCE_ID="/subscriptions/ea07db6a-fb25-46b8-9ecb-b8ce7dd53f8d/resourceGroups/P277_VPPRV_CC_URO_AIFactory/providers/Microsoft.Network/bastionHosts/P277VPPRV-CC-VNET01-bastion"
+export EXISTING_COGNITIVE_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID="/subscriptions/ea07db6a-fb25-46b8-9ecb-b8ce7dd53f8d/resourceGroups/P277_VPPRV_CC_URO_AIFactory/providers/Microsoft.Network/privateDnsZones/privatelink.cognitiveservices.azure.com"
+export EXISTING_OPENAI_PRIVATE_DNS_ZONE_RESOURCE_ID="/subscriptions/ea07db6a-fb25-46b8-9ecb-b8ce7dd53f8d/resourceGroups/P277_VPPRV_CC_URO_AIFactory/providers/Microsoft.Network/privateDnsZones/privatelink.openai.azure.com"
+export EXISTING_AI_SERVICES_PRIVATE_DNS_ZONE_RESOURCE_ID="/subscriptions/ea07db6a-fb25-46b8-9ecb-b8ce7dd53f8d/resourceGroups/P277_VPPRV_CC_URO_AIFactory/providers/Microsoft.Network/privateDnsZones/privatelink.services.ai.azure.com"
+export EXISTING_KEY_VAULT_PRIVATE_DNS_ZONE_RESOURCE_ID="/subscriptions/ea07db6a-fb25-46b8-9ecb-b8ce7dd53f8d/resourceGroups/P277_VPPRV_CC_URO_AIFactory/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net"
+export EXISTING_BLOB_PRIVATE_DNS_ZONE_RESOURCE_ID="/subscriptions/ea07db6a-fb25-46b8-9ecb-b8ce7dd53f8d/resourceGroups/P277_VPPRV_CC_URO_AIFactory/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"
+./deploy.sh
+```
+
 ### Option 2: Using Azure Developer CLI (azd)
 
 If you're using the full project with azd:

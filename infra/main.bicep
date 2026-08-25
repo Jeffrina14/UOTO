@@ -105,16 +105,59 @@ param vmImageVersion string = 'latest'
 @allowed([false, true])
 param vmAntiMalware bool = true
 
+@description('Run VM CustomScriptExtension bootstrap from GitHub. Disable in network-isolated environments without outbound internet access. Override via AZURE_VM_CUSTOM_SCRIPT_BOOTSTRAP env var.')
+@allowed([false, true])
+param vmCustomScriptBootstrap bool = true
+
 // flag that indicates if we're reusing a vnet
-var _vnetReuse = _azureReuseConfig.vnetReuse
+var _vnetReuse = vnetReuse || _azureReuseConfig.vnetReuse
 
 @description('Virtual network name, you can leave as it is to generate a random name.')
 param vnetName string = ''
-var _vnetName = _azureReuseConfig.vnetReuse ? _azureReuseConfig.existingVnetName : !empty(vnetName) ? vnetName : '${abbrs.networking.virtualNetwork}ai-${suffix}'
+var _vnetName = _vnetReuse ? (!empty(existingVnetName) ? existingVnetName : !empty(_azureReuseConfig.existingVnetName) ? _azureReuseConfig.existingVnetName : 'P277VPPRV-CC-VNET01') : !empty(vnetName) ? vnetName : '${abbrs.networking.virtualNetwork}ai-${suffix}'
+var _existingVnetResourceGroupName = _vnetReuse ? (!empty(existingVnetResourceGroupName) ? existingVnetResourceGroupName : !empty(_azureReuseConfig.existingVnetResourceGroupName) ? _azureReuseConfig.existingVnetResourceGroupName : 'P277VPPRV-CC-ADCO-RG01') : (!empty(existingVnetResourceGroupName) ? existingVnetResourceGroupName : _azureReuseConfig.existingVnetResourceGroupName)
 
 @description('Address space for the virtual network')
 param vnetAddress string = ''
 var _vnetAddress = !empty(vnetAddress) ? vnetAddress : '10.0.0.0/23'
+
+@description('Reuse the existing VNet instead of creating a new one.')
+param vnetReuse bool = false
+
+@description('Resource group containing the existing VNet.')
+param existingVnetResourceGroupName string = ''
+
+@description('Name of the existing VNet.')
+param existingVnetName string = ''
+
+@description('Existing or new AI/private endpoint subnet name.')
+param aiSubnetName string = 'aiSubnet'
+
+@description('Existing or new application services subnet name used for Function App VNet integration.')
+param appServicesSubnetName string = 'appServicesSubnet'
+
+@description('Existing or new database/private endpoint subnet name used for Cosmos DB.')
+param databaseSubnetName string = 'databaseSubnet'
+
+@description('Existing Cosmos private DNS zone resource ID.')
+param existingDocumentsPrivateDnsZoneResourceId string = ''
+
+@description('Existing Cognitive Services private DNS zone resource ID.')
+param existingCognitiveServicesPrivateDnsZoneResourceId string = ''
+
+@description('Existing OpenAI private DNS zone resource ID.')
+param existingOpenAiPrivateDnsZoneResourceId string = ''
+
+@description('Existing AI Services private DNS zone resource ID.')
+param existingAiServicesPrivateDnsZoneResourceId string = ''
+
+@description('Existing Key Vault private DNS zone resource ID.')
+param existingKeyVaultPrivateDnsZoneResourceId string = ''
+
+@description('Existing Blob private DNS zone resource ID.')
+param existingBlobPrivateDnsZoneResourceId string = ''
+@description('Role assignment IDs that already exist and should not be recreated.')
+param skipRoleAssignmentIds array = []
 
 @description('User PrincipalId - automatically set to signed-in user by azd')
 param userPrincipalId string = principalId
@@ -132,8 +175,8 @@ param allowStorageKeyAccess bool = false
 @allowed(['B1', 'B2', 'S1', 'S2', 'S3', 'P1v2', 'P2v2', 'P3v2', 'FC1'])
 param functionAppSKU string = (functionAppHostPlan == 'FlexConsumption') ? 'FC1' : 'S2'
 
-var openaiApiVersion = '2025-08-07'
-var openaiModel = 'gpt-5-mini'
+var openaiApiVersion = '2024-05-01-preview'
+var openaiModel = 'gpt-5.4-nano'
 var functionRuntime = 'python'
 
 var hostingPlanName = '${abbrs.compute.appServicePlan}${suffix}'
@@ -217,7 +260,7 @@ module azureMonitorPrivateLinkScope './modules/security/private-link-scope.bicep
   }
 }
 
-module automationDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module automationDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingAutomationPrivateDnsZoneResourceId)) {
   name: 'automation-dnzones'
   // // scope: ResourceGroup
   params: {
@@ -227,7 +270,7 @@ module automationDnsZone './modules/network/private-dns-zones.bicep' = if (_netw
   }
 }
 
-module odsInsightsDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module odsInsightsDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingOdsPrivateDnsZoneResourceId)) {
   name: 'odsinsights-dnzones'
   // // scope: ResourceGroup
   params: {
@@ -237,7 +280,7 @@ module odsInsightsDnsZone './modules/network/private-dns-zones.bicep' = if (_net
   }
 }
 
-module omsInsightsDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module omsInsightsDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingOmsPrivateDnsZoneResourceId)) {
   name: 'omsinsights-dnzones'
   // // scope: ResourceGroup
   params: {
@@ -247,7 +290,7 @@ module omsInsightsDnsZone './modules/network/private-dns-zones.bicep' = if (_net
   }
 }
 
-module azMonitorDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module azMonitorDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingAzureMonitorPrivateDnsZoneResourceId)) {
   name: 'azmonitor-dnzones'
   // // scope: ResourceGroup
   params: {
@@ -268,7 +311,7 @@ module logAnalyticsPe './modules/network/private-endpoint.bicep' = if (_networkI
     subnetId: _networkIsolation?vnet.outputs.aiSubId:''
     serviceId: azureMonitorPrivateLinkScope.outputs.id
     groupIds: ['azuremonitor']
-    dnsZoneId: _networkIsolation?azMonitorDnsZone.outputs.id:''
+    dnsZoneId: _networkIsolation ? (!empty(_azureReuseConfig.existingAzureMonitorPrivateDnsZoneResourceId) ? _azureReuseConfig.existingAzureMonitorPrivateDnsZoneResourceId : azMonitorDnsZone.outputs.id) : ''
   }
 }
 
@@ -341,7 +384,7 @@ var appSettings = [
   }
   {
     name: 'OPENAI_MODEL'
-    value: 'gpt-5-mini'
+    value: 'chat'
   }
   {
     name: 'COSMOS_DB_DATABASE_NAME'
@@ -369,7 +412,7 @@ var appSettings = [
   }
 ]
 
-module vaultDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module vaultDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingKeyVaultPrivateDnsZoneResourceId)) {
   // // scope : resourceGroup
   name: 'vault-dnzones'
   params: {
@@ -379,7 +422,7 @@ module vaultDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIs
   }
 }
 
-module keyvaultpe './modules/network/private-endpoint.bicep' = if (_networkIsolation && !_vnetReuse) {
+module keyvaultpe './modules/network/private-endpoint.bicep' = if (_networkIsolation && (!empty(_azureReuseConfig.existingKeyVaultPrivateDnsZoneResourceId) || !_vnetReuse)) {
   // // scope : resourceGroup
   name: 'keyvaultpe'
   params: {
@@ -389,7 +432,7 @@ module keyvaultpe './modules/network/private-endpoint.bicep' = if (_networkIsola
     subnetId: _networkIsolation?vnet.outputs.aiSubId:''
     serviceId: keyVault.outputs.id
     groupIds: ['Vault']
-    dnsZoneId: _networkIsolation?vaultDnsZone.outputs.id:''
+    dnsZoneId: _networkIsolation ? (!empty(_azureReuseConfig.existingKeyVaultPrivateDnsZoneResourceId) ? _azureReuseConfig.existingKeyVaultPrivateDnsZoneResourceId : vaultDnsZone.outputs.id) : ''
   }
 }
 
@@ -409,17 +452,6 @@ var keyVaultSecretsUserIdentityAssignmentsAll = concat(keyVaultSecretsUserIdenti
     principalType: 'ServicePrincipal'
   }
 ])
-
-var subnets = reduce(
-  map(vnet.outputs.subnets, subnet => {
-      '${subnet.name}': {
-        id: subnet.id
-        addressPrefix: subnet.properties.addressPrefix
-      }
-    }),
-  {},
-  (cur, acc) => union(cur, acc)
-)
 
 // 1. Key Vault
 module keyVault './modules/security/key-vault.bicep' = {
@@ -508,7 +540,7 @@ module cosmosContributorUser './modules/rbac/cosmos-contributor.bicep' = {
   }
 }
 
-module cogservicesDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module cogservicesDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingCognitiveServicesPrivateDnsZoneResourceId)) {
   // scope : resourceGroup
   name: 'aiservices-dnzones'
   params: {
@@ -518,7 +550,7 @@ module cogservicesDnsZone './modules/network/private-dns-zones.bicep' = if (_net
   }
 }
 
-module openaiDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module openaiDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingOpenAiPrivateDnsZoneResourceId)) {
   name: 'openai-dnzones'
   // scope: resourceGroup
   params: {
@@ -529,7 +561,7 @@ module openaiDnsZone './modules/network/private-dns-zones.bicep' = if (_networkI
 }
 
 
-module aiServicesDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module aiServicesDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingAiServicesPrivateDnsZoneResourceId)) {
   // scope : resourceGroup
   name: 'aiservices-services-dnzones'
   params: {
@@ -545,7 +577,7 @@ module aiServicesDnsZone './modules/network/private-dns-zones.bicep' = if (_netw
 // Migration: aiServicesPe REMOVED - AVM handles private endpoint creation internally
 
 // Cosmos DB Module
-module documentsDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module documentsDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingDocumentsPrivateDnsZoneResourceId)) {
   // scope : resourceGroup
   name: 'documents-dnzones'
   params: {
@@ -555,7 +587,7 @@ module documentsDnsZone './modules/network/private-dns-zones.bicep' = if (_netwo
   }
 }
 
-module cosmospe './modules/network/private-endpoint.bicep' = if (_networkIsolation && !_vnetReuse) {
+module cosmospe './modules/network/private-endpoint.bicep' = if (_networkIsolation && (!empty(_azureReuseConfig.existingDocumentsPrivateDnsZoneResourceId) || !_vnetReuse)) {
   // scope : resourceGroup
   name: 'cosmospe'
   params: {
@@ -565,7 +597,7 @@ module cosmospe './modules/network/private-endpoint.bicep' = if (_networkIsolati
     subnetId: _networkIsolation?vnet.outputs.databaseSubId:''
     serviceId: cosmos.outputs.id
     groupIds: ['Sql']
-    dnsZoneId: _networkIsolation?documentsDnsZone.outputs.id:''
+    dnsZoneId: _networkIsolation ? (!empty(_azureReuseConfig.existingDocumentsPrivateDnsZoneResourceId) ? _azureReuseConfig.existingDocumentsPrivateDnsZoneResourceId : documentsDnsZone.outputs.id) : ''
   }
 }
 
@@ -626,11 +658,11 @@ module aiFoundry 'br/public:avm/ptn/ai-ml/ai-foundry:0.6.0' = {
     // Model deployments - using correct AVM schema
     aiModelDeployments: [
       {
-        name: 'gpt-5-mini'
+        name: 'chat'
         model: {
           format: 'OpenAI'
-          name: 'gpt-5-mini'
-          version: '2025-08-07'
+          name: 'gpt-5.4-nano'
+          version: '2026-03-17'
         }
         sku: {
           name: 'GlobalStandard'
@@ -639,7 +671,7 @@ module aiFoundry 'br/public:avm/ptn/ai-ml/ai-foundry:0.6.0' = {
       }
     ]
   }
-  dependsOn: _networkIsolation ? [vnet, aiServicesDnsZone, cogservicesDnsZone, openaiDnsZone] : []
+  dependsOn: (_networkIsolation && !_vnetReuse) ? [vnet, aiServicesDnsZone, cogservicesDnsZone, openaiDnsZone] : (_networkIsolation ? [vnet] : [])
 }
 
 // Fix: AccountProvisioningStateInvalid race condition
@@ -647,7 +679,8 @@ module aiFoundry 'br/public:avm/ptn/ai-ml/ai-foundry:0.6.0' = {
 // so ARM can start the PE before the account's internal provisioningState reaches "Succeeded".
 // By creating the PE here — outside the AVM module — with dependsOn: [aiFoundry], ARM guarantees
 // the entire aiFoundry deployment (account + project) is fully complete before this PE starts.
-module aiFoundryPe './modules/network/private-endpoint.bicep' = if (_networkIsolation && !_vnetReuse) {
+var _hasAllAiFoundryDnsZonesInReuse = !empty(_azureReuseConfig.existingCognitiveServicesPrivateDnsZoneResourceId) && !empty(_azureReuseConfig.existingOpenAiPrivateDnsZoneResourceId) && !empty(_azureReuseConfig.existingAiServicesPrivateDnsZoneResourceId)
+module aiFoundryPe './modules/network/private-endpoint.bicep' = if (_networkIsolation && (!_vnetReuse || _hasAllAiFoundryDnsZonesInReuse)) {
   name: 'aiFoundryPe'
   params: {
     location: location
@@ -658,15 +691,15 @@ module aiFoundryPe './modules/network/private-endpoint.bicep' = if (_networkIsol
     groupIds: ['account']
     // CognitiveServices accounts require three DNS zones for the single 'account' PE
     dnsZoneIds: [
-      cogservicesDnsZone.outputs.id
-      openaiDnsZone.outputs.id
-      aiServicesDnsZone.outputs.id
+      !empty(_azureReuseConfig.existingCognitiveServicesPrivateDnsZoneResourceId) ? _azureReuseConfig.existingCognitiveServicesPrivateDnsZoneResourceId : cogservicesDnsZone.outputs.id
+      !empty(_azureReuseConfig.existingOpenAiPrivateDnsZoneResourceId) ? _azureReuseConfig.existingOpenAiPrivateDnsZoneResourceId : openaiDnsZone.outputs.id
+      !empty(_azureReuseConfig.existingAiServicesPrivateDnsZoneResourceId) ? _azureReuseConfig.existingAiServicesPrivateDnsZoneResourceId : aiServicesDnsZone.outputs.id
     ]
   }
   dependsOn: [aiFoundry]
 }
 
-module vnet './modules/network/vnet.bicep' = if (_networkIsolation && !_vnetReuse) {
+module vnet './modules/network/vnet.bicep' = if (_networkIsolation) {
   // scope : resourceGroup
   name: 'virtual-network'
   params: {
@@ -674,7 +707,10 @@ module vnet './modules/network/vnet.bicep' = if (_networkIsolation && !_vnetReus
     vnetName: _vnetName
     vnetReuse: _vnetReuse
     deployVPN: _deployVPN
-    existingVnetResourceGroupName: _azureReuseConfig.existingVnetResourceGroupName
+    existingVnetResourceGroupName: _existingVnetResourceGroupName
+    aiSubnetName: aiSubnetName
+    appServicesSubnetName: appServicesSubnetName
+    databaseSubnetName: databaseSubnetName
     tags: tags
     vnetAddress: _vnetAddress
     appServicePlanId: hostingPlan.outputs.resourceId
@@ -1312,15 +1348,12 @@ var contributorIdentityAssignments = [
   }
 ]
 
-module resourceGroupRoleAssignment './modules/security/resource-group-role-assignment.bicep' = {
+module resourceGroupRoleAssignment './modules/security/resource-group-role-assignment.bicep' = if (!_vnetReuse && empty(skipRoleAssignmentIds)) {
   name: '${resourceGroupName}-role-appconfig'
   // scope: resourceGroup
   params: {
-    roleAssignments: (userPrincipalId != '') ? concat(contributorIdentityAssignments, allConfigDataOwnerIdentityAssignments, [{
-      principalId: userPrincipalId
-      roleDefinitionId: cogServicesOpenAIUserRole.id
-      principalType: 'User'
-    }]) : concat(contributorIdentityAssignments, [], allConfigDataOwnerIdentityAssignments)
+    skipRoleAssignmentIds: skipRoleAssignmentIds
+    roleAssignments: concat(contributorIdentityAssignments, allConfigDataOwnerIdentityAssignments)
   }
 }
 
@@ -1349,7 +1382,7 @@ resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleDefinitions@2022-0
 // }
 
 // Bastion Host
-module testVmBastionHost 'br/public:avm/res/network/bastion-host:0.8.0' = if (_deployVM && _networkIsolation) {
+module testVmBastionHost 'br/public:avm/res/network/bastion-host:0.8.0' = if (_deployVM && _networkIsolation && empty(_azureReuseConfig.existingBastionHostResourceId)) {
   // scope: resourceGroup
   name: 'bastionHost'
   params: {
@@ -1458,7 +1491,7 @@ var _fileUris = [
 ]
 
 
-resource cse 'Microsoft.Compute/virtualMachines/extensions@2024-11-01' = if (_deployVM && _networkIsolation) {
+resource cse 'Microsoft.Compute/virtualMachines/extensions@2024-11-01' = if (_deployVM && _networkIsolation && vmCustomScriptBootstrap) {
   // // scope: ResourceGroup
   name: '${_ztVmName}/cse'
   location: location
@@ -1568,6 +1601,20 @@ var _azureReuseConfigDefaults = {
   vnetReuse: false
   existingVnetResourceGroupName: ''
   existingVnetName: ''
+  existingAutomationPrivateDnsZoneResourceId: ''
+  existingOdsPrivateDnsZoneResourceId: ''
+  existingOmsPrivateDnsZoneResourceId: ''
+  existingAzureMonitorPrivateDnsZoneResourceId: ''
+  existingKeyVaultPrivateDnsZoneResourceId: ''
+  existingCognitiveServicesPrivateDnsZoneResourceId: ''
+  existingOpenAiPrivateDnsZoneResourceId: ''
+  existingAiServicesPrivateDnsZoneResourceId: ''
+  existingDocumentsPrivateDnsZoneResourceId: ''
+  existingBlobPrivateDnsZoneResourceId: ''
+  existingQueuePrivateDnsZoneResourceId: ''
+  existingTablePrivateDnsZoneResourceId: ''
+  existingFilePrivateDnsZoneResourceId: ''
+  existingBastionHostResourceId: ''
   orchestratorFunctionAppReuse: false
   existingOrchestratorFunctionAppResourceGroupName: ''
   existingOrchestratorFunctionAppName: ''  
@@ -1620,9 +1667,23 @@ var _azureReuseConfig = union(_azureReuseConfigDefaults, {
     storageReuse: (empty(azureReuseConfig.storageReuse) ? _azureReuseConfigDefaults.storageReuse : toLower(azureReuseConfig.storageReuse) == 'true')
     existingStorageResourceGroupName: (empty(azureReuseConfig.existingStorageResourceGroupName) ? _azureReuseConfigDefaults.existingStorageResourceGroupName : azureReuseConfig.existingStorageResourceGroupName)
     existingStorageName: (empty(azureReuseConfig.existingStorageName) ? _azureReuseConfigDefaults.existingStorageName : azureReuseConfig.existingStorageName)
-    vnetReuse: (empty(azureReuseConfig.vnetReuse) ? _azureReuseConfigDefaults.vnetReuse : toLower(azureReuseConfig.vnetReuse) == 'true')
-    existingVnetResourceGroupName: (empty(azureReuseConfig.existingVnetResourceGroupName) ? _azureReuseConfigDefaults.existingVnetResourceGroupName : azureReuseConfig.existingVnetResourceGroupName)
-    existingVnetName: (empty(azureReuseConfig.existingVnetName) ? _azureReuseConfigDefaults.existingVnetName : azureReuseConfig.existingVnetName)
+    vnetReuse: (contains(azureReuseConfig, 'vnetReuse') ? toLower(azureReuseConfig.vnetReuse) == 'true' : vnetReuse)
+    existingVnetResourceGroupName: (contains(azureReuseConfig, 'existingVnetResourceGroupName') ? azureReuseConfig.existingVnetResourceGroupName : existingVnetResourceGroupName)
+    existingVnetName: (contains(azureReuseConfig, 'existingVnetName') ? azureReuseConfig.existingVnetName : existingVnetName)
+    existingAutomationPrivateDnsZoneResourceId: (empty(azureReuseConfig.existingAutomationPrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingAutomationPrivateDnsZoneResourceId : azureReuseConfig.existingAutomationPrivateDnsZoneResourceId)
+    existingOdsPrivateDnsZoneResourceId: (empty(azureReuseConfig.existingOdsPrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingOdsPrivateDnsZoneResourceId : azureReuseConfig.existingOdsPrivateDnsZoneResourceId)
+    existingOmsPrivateDnsZoneResourceId: (empty(azureReuseConfig.existingOmsPrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingOmsPrivateDnsZoneResourceId : azureReuseConfig.existingOmsPrivateDnsZoneResourceId)
+    existingAzureMonitorPrivateDnsZoneResourceId: (empty(azureReuseConfig.existingAzureMonitorPrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingAzureMonitorPrivateDnsZoneResourceId : azureReuseConfig.existingAzureMonitorPrivateDnsZoneResourceId)
+    existingKeyVaultPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingKeyVaultPrivateDnsZoneResourceId') ? azureReuseConfig.existingKeyVaultPrivateDnsZoneResourceId : existingKeyVaultPrivateDnsZoneResourceId)
+    existingCognitiveServicesPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingCognitiveServicesPrivateDnsZoneResourceId') ? azureReuseConfig.existingCognitiveServicesPrivateDnsZoneResourceId : existingCognitiveServicesPrivateDnsZoneResourceId)
+    existingOpenAiPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingOpenAiPrivateDnsZoneResourceId') ? azureReuseConfig.existingOpenAiPrivateDnsZoneResourceId : existingOpenAiPrivateDnsZoneResourceId)
+    existingAiServicesPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingAiServicesPrivateDnsZoneResourceId') ? azureReuseConfig.existingAiServicesPrivateDnsZoneResourceId : existingAiServicesPrivateDnsZoneResourceId)
+    existingDocumentsPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingDocumentsPrivateDnsZoneResourceId') ? azureReuseConfig.existingDocumentsPrivateDnsZoneResourceId : existingDocumentsPrivateDnsZoneResourceId)
+    existingBlobPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingBlobPrivateDnsZoneResourceId') ? azureReuseConfig.existingBlobPrivateDnsZoneResourceId : existingBlobPrivateDnsZoneResourceId)
+    existingQueuePrivateDnsZoneResourceId: (empty(azureReuseConfig.existingQueuePrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingQueuePrivateDnsZoneResourceId : azureReuseConfig.existingQueuePrivateDnsZoneResourceId)
+    existingTablePrivateDnsZoneResourceId: (empty(azureReuseConfig.existingTablePrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingTablePrivateDnsZoneResourceId : azureReuseConfig.existingTablePrivateDnsZoneResourceId)
+    existingFilePrivateDnsZoneResourceId: (empty(azureReuseConfig.existingFilePrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingFilePrivateDnsZoneResourceId : azureReuseConfig.existingFilePrivateDnsZoneResourceId)
+    existingBastionHostResourceId: (empty(azureReuseConfig.existingBastionHostResourceId) ? _azureReuseConfigDefaults.existingBastionHostResourceId : azureReuseConfig.existingBastionHostResourceId)
     orchestratorFunctionAppReuse: (empty(azureReuseConfig.orchestratorFunctionAppReuse) ? _azureReuseConfigDefaults.orchestratorFunctionAppReuse: toLower(azureReuseConfig.orchestratorFunctionAppReuse) == 'true')
     existingOrchestratorFunctionAppResourceGroupName: (empty(azureReuseConfig.existingOrchestratorFunctionAppResourceGroupName) ? _azureReuseConfigDefaults.existingOrchestratorFunctionAppResourceGroupName : azureReuseConfig.existingOrchestratorFunctionAppResourceGroupName)
     existingOrchestratorFunctionAppName: (empty(azureReuseConfig.existingOrchestratorFunctionAppName) ? _azureReuseConfigDefaults.existingOrchestratorFunctionAppName : azureReuseConfig.existingOrchestratorFunctionAppName)

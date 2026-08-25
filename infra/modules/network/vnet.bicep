@@ -33,7 +33,7 @@ param databaseNsgName string = 'database-nsg'
 param bastionNsgName string = 'bastion-nsg'
 
 // Network Security Groups
-resource aiNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource aiNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = if (!vnetReuse) {
   name: aiNsgName
   location: location
   tags: tags
@@ -42,7 +42,7 @@ resource aiNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   }
 }
 
-resource appIntNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource appIntNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = if (!vnetReuse) {
   name: appIntNsgName
   location: location
   tags: tags
@@ -51,7 +51,7 @@ resource appIntNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   }
 }
 
-resource appServicesNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource appServicesNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = if (!vnetReuse) {
   name: appServicesNsgName
   location: location
   tags: tags
@@ -60,7 +60,7 @@ resource appServicesNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   }
 }
 
-resource databaseNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource databaseNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = if (!vnetReuse) {
   name: databaseNsgName
   location: location
   tags: tags
@@ -69,7 +69,7 @@ resource databaseNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   }
 }
 
-resource bastionNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource bastionNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = if (!vnetReuse) {
   name: bastionNsgName
   location: location
   tags: tags
@@ -293,12 +293,6 @@ var allSubnets = (deployVPN) ? concat(subnets, [{
   }
 }]) : subnets
 
-// Virtual Network and Subnets
-resource existingVnet 'Microsoft.Network/virtualNetworks@2024-05-01' existing = if (vnetReuse) {
-  scope: resourceGroup(existingVnetResourceGroupName)
-  name: vnetName
-}
-
 resource newVnet 'Microsoft.Network/virtualNetworks@2024-05-01' = if (!vnetReuse) {
   name: vnetName
   location: location
@@ -313,11 +307,12 @@ resource newVnet 'Microsoft.Network/virtualNetworks@2024-05-01' = if (!vnetReuse
   }
 }
 
-output name string = vnetReuse ? existingVnet.name : newVnet.name
-output id string = vnetReuse ? existingVnet.id : newVnet.id
-output subnets array = vnetReuse ? existingVnet.properties.subnets : newVnet.properties.subnets
-output aiSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, aiSubnetName) : newVnet.properties.subnets[0].id
-output appServicesSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, appServicesSubnetName) : newVnet.properties.subnets[1].id
-output databaseSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, databaseSubnetName) : newVnet.properties.subnets[2].id
-output bastionSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, bastionSubnetName) : newVnet.properties.subnets[3].id
-output appIntSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, appIntSubnetName) : newVnet.properties.subnets[4].id
+output name string = vnetName
+output id string = vnetReuse ? existingVnetId : newVnet.id
+output subnets array = vnetReuse ? [] : newVnet.properties.subnets
+var existingVnetId = '/subscriptions/${subscription().subscriptionId}/resourceGroups/${existingVnetResourceGroupName}/providers/Microsoft.Network/virtualNetworks/${vnetName}'
+output aiSubId string = vnetReuse ? '${existingVnetId}/subnets/${aiSubnetName}' : newVnet.properties.subnets[0].id
+output appServicesSubId string = vnetReuse ? '${existingVnetId}/subnets/${appServicesSubnetName}' : newVnet.properties.subnets[1].id
+output databaseSubId string = vnetReuse ? '${existingVnetId}/subnets/${databaseSubnetName}' : newVnet.properties.subnets[2].id
+output bastionSubId string = vnetReuse ? '${existingVnetId}/subnets/${bastionSubnetName}' : newVnet.properties.subnets[3].id
+output appIntSubId string = vnetReuse ? '${existingVnetId}/subnets/${appIntSubnetName}' : newVnet.properties.subnets[4].id

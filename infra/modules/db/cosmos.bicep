@@ -108,7 +108,6 @@ resource newAccount 'Microsoft.DocumentDB/databaseAccounts@2024-12-01-preview' =
     databaseAccountOfferType: 'Standard'
     enableAutomaticFailover: systemManagedFailover
     publicNetworkAccess: publicNetworkAccess
-    enableAnalyticalStorage: true
   }
 }
 
@@ -134,7 +133,6 @@ resource conversationsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDataba
         ]
         kind: 'Hash'
       }
-      analyticalStorageTtl: analyticalStoreTTL
       indexingPolicy: {
         indexingMode: 'consistent'
         includedPaths: [
@@ -165,7 +163,6 @@ resource modelsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/con
         ]
         kind: 'Hash'
       }
-      analyticalStorageTtl: analyticalStoreTTL
       indexingPolicy: {
         indexingMode: 'none'
         automatic: false

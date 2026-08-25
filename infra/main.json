@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "16746537659678750025"
+      "templateHash": "136215177288524427"
     }
   },
   "definitions": {
@@ -73,32 +73,9 @@
     },
     "aoaiLocation": {
       "type": "string",
-      "allowedValues": [
-        "East US",
-        "East US 2",
-        "France Central",
-        "Germany West Central",
-        "Japan East",
-        "Korea Central",
-        "North Central US",
-        "Norway East",
-        "Poland Central",
-        "South Africa North",
-        "South Central US",
-        "South India",
-        "Southeast Asia",
-        "Spain Central",
-        "Sweden Central",
-        "Switzerland North",
-        "Switzerland West",
-        "UAE North",
-        "UK South",
-        "West Europe",
-        "West US",
-        "West US 3"
-      ],
+      "defaultValue": "",
       "metadata": {
-        "description": "Location for the Azure AI Foundry account"
+        "description": "Location for the Azure AI Foundry account. If AOAI_LOCATION env var is set, that value is used. Otherwise defaults to the same region as AZURE_LOCATION. Set via: azd env set AOAI_LOCATION <region>"
       }
     },
     "networkIsolation": {
@@ -219,6 +196,17 @@
         "description": "Image version (use latest unless you need a pinned build)."
       }
     },
+    "vmAntiMalware": {
+      "type": "bool",
+      "defaultValue": true,
+      "allowedValues": [
+        false,
+        true
+      ],
+      "metadata": {
+        "description": "Install Microsoft AntiMalware extension on the test VM. Disable in network-isolated environments without outbound internet access. Override via AZURE_VM_ANTIMALWARE env var."
+      }
+    },
     "vnetName": {
       "type": "string",
       "defaultValue": "",
@@ -233,6 +221,97 @@
         "description": "Address space for the virtual network"
       }
     },
+    "vnetReuse": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Reuse the existing VNet instead of creating a new one."
+      }
+    },
+    "existingVnetResourceGroupName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource group containing the existing VNet."
+      }
+    },
+    "existingVnetName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Name of the existing VNet."
+      }
+    },
+    "aiSubnetName": {
+      "type": "string",
+      "defaultValue": "aiSubnet",
+      "metadata": {
+        "description": "Existing or new AI/private endpoint subnet name."
+      }
+    },
+    "appServicesSubnetName": {
+      "type": "string",
+      "defaultValue": "appServicesSubnet",
+      "metadata": {
+        "description": "Existing or new application services subnet name used for Function App VNet integration."
+      }
+    },
+    "databaseSubnetName": {
+      "type": "string",
+      "defaultValue": "databaseSubnet",
+      "metadata": {
+        "description": "Existing or new database/private endpoint subnet name used for Cosmos DB."
+      }
+    },
+    "existingDocumentsPrivateDnsZoneResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing Cosmos private DNS zone resource ID."
+      }
+    },
+    "existingCognitiveServicesPrivateDnsZoneResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing Cognitive Services private DNS zone resource ID."
+      }
+    },
+    "existingOpenAiPrivateDnsZoneResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing OpenAI private DNS zone resource ID."
+      }
+    },
+    "existingAiServicesPrivateDnsZoneResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing AI Services private DNS zone resource ID."
+      }
+    },
+    "existingKeyVaultPrivateDnsZoneResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing Key Vault private DNS zone resource ID."
+      }
+    },
+    "existingBlobPrivateDnsZoneResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing Blob private DNS zone resource ID."
+      }
+    },
+    "skipRoleAssignmentIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Role assignment IDs that already exist and should not be recreated."
+      }
+    },
     "userPrincipalId": {
       "type": "string",
       "defaultValue": "[parameters('principalId')]",
@@ -242,13 +321,12 @@
     },
     "functionAppHostPlan": {
       "type": "string",
-      "defaultValue": "FlexConsumption",
       "allowedValues": [
         "Dedicated",
         "FlexConsumption"
       ],
       "metadata": {
-        "description": "Function App hosting plan. FlexConsumption uses Container Apps quota (works on MCAP). Dedicated uses Standard VM quota (blocked on MCAP subscriptions where Standard VM limit is 0)."
+        "description": "Function App hosting plan. FlexConsumption uses Container Apps quota. Dedicated uses Standard VM quota. Can be set in advance via FUNCTION_APP_HOST_PLAN env var."
       }
     },
     "allowStorageKeyAccess": {
@@ -975,6 +1053,7 @@
     "_resourceGroupName": "[if(not(empty(variables('resourceGroupName'))), variables('resourceGroupName'), format('{0}-{1}', variables('abbrs').managementGovernance.resourceGroup, parameters('environmentName')))]",
     "suffix": "[toLower(uniqueString(subscription().id, parameters('environmentName'), parameters('location')))]",
     "deploymentStorageContainerName": "app-package",
+    "_aoaiLocation": "[if(not(empty(parameters('aoaiLocation'))), parameters('aoaiLocation'), parameters('location'))]",
     "_networkIsolation": "[parameters('networkIsolation')]",
     "_deployVM": "[parameters('deployVM')]",
     "_deployVPN": "[parameters('deployVPN')]",
@@ -983,11 +1062,12 @@
     "_ai_vision_enabled": "[parameters('ai_vision_enabled')]",
     "_ztVmName": "[if(not(empty(parameters('ztVmName'))), parameters('ztVmName'), format('vm-{0}', take(variables('suffix'), 12)))]",
     "_vmKeyVaultSecName": "[if(not(empty(parameters('vmKeyVaultSecName'))), parameters('vmKeyVaultSecName'), 'vmUserInitialPassword')]",
-    "_vnetReuse": "[variables('_azureReuseConfig').vnetReuse]",
-    "_vnetName": "[if(variables('_azureReuseConfig').vnetReuse, variables('_azureReuseConfig').existingVnetName, if(not(empty(parameters('vnetName'))), parameters('vnetName'), format('{0}ai-{1}', variables('abbrs').networking.virtualNetwork, variables('suffix'))))]",
+    "_vnetReuse": "[or(parameters('vnetReuse'), variables('_azureReuseConfig').vnetReuse)]",
+    "_vnetName": "[if(variables('_vnetReuse'), if(not(empty(parameters('existingVnetName'))), parameters('existingVnetName'), if(not(empty(variables('_azureReuseConfig').existingVnetName)), variables('_azureReuseConfig').existingVnetName, 'P277VPPRV-CC-VNET01')), if(not(empty(parameters('vnetName'))), parameters('vnetName'), format('{0}ai-{1}', variables('abbrs').networking.virtualNetwork, variables('suffix'))))]",
+    "_existingVnetResourceGroupName": "[if(variables('_vnetReuse'), if(not(empty(parameters('existingVnetResourceGroupName'))), parameters('existingVnetResourceGroupName'), if(not(empty(variables('_azureReuseConfig').existingVnetResourceGroupName)), variables('_azureReuseConfig').existingVnetResourceGroupName, 'P277VPPRV-CC-ADCO-RG01')), if(not(empty(parameters('existingVnetResourceGroupName'))), parameters('existingVnetResourceGroupName'), variables('_azureReuseConfig').existingVnetResourceGroupName))]",
     "_vnetAddress": "[if(not(empty(parameters('vnetAddress'))), parameters('vnetAddress'), '10.0.0.0/23')]",
-    "openaiApiVersion": "2025-08-07",
-    "openaiModel": "gpt-5-mini",
+    "openaiApiVersion": "2024-05-01-preview",
+    "openaiModel": "gpt-5.4-nano",
     "functionRuntime": "python",
     "hostingPlanName": "[format('{0}{1}', variables('abbrs').compute.appServicePlan, variables('suffix'))]",
     "processingFunctionAppName": "[format('{0}processing-{1}', variables('abbrs').compute.functionApp, variables('suffix'))]",
@@ -1054,6 +1134,20 @@
       "vnetReuse": false,
       "existingVnetResourceGroupName": "",
       "existingVnetName": "",
+      "existingAutomationPrivateDnsZoneResourceId": "",
+      "existingOdsPrivateDnsZoneResourceId": "",
+      "existingOmsPrivateDnsZoneResourceId": "",
+      "existingAzureMonitorPrivateDnsZoneResourceId": "",
+      "existingKeyVaultPrivateDnsZoneResourceId": "",
+      "existingCognitiveServicesPrivateDnsZoneResourceId": "",
+      "existingOpenAiPrivateDnsZoneResourceId": "",
+      "existingAiServicesPrivateDnsZoneResourceId": "",
+      "existingDocumentsPrivateDnsZoneResourceId": "",
+      "existingBlobPrivateDnsZoneResourceId": "",
+      "existingQueuePrivateDnsZoneResourceId": "",
+      "existingTablePrivateDnsZoneResourceId": "",
+      "existingFilePrivateDnsZoneResourceId": "",
+      "existingBastionHostResourceId": "",
       "orchestratorFunctionAppReuse": false,
       "existingOrchestratorFunctionAppResourceGroupName": "",
       "existingOrchestratorFunctionAppName": "",
@@ -1070,7 +1164,7 @@
       "existingDataIngestionFunctionAppStorageName": "",
       "existingDataIngestionFunctionAppStorageResourceGroupName": ""
     },
-    "_azureReuseConfig": "[union(variables('_azureReuseConfigDefaults'), createObject('aoaiReuse', if(empty(parameters('azureReuseConfig').aoaiReuse), variables('_azureReuseConfigDefaults').aoaiReuse, equals(toLower(parameters('azureReuseConfig').aoaiReuse), 'true')), 'existingAoaiResourceGroupName', if(empty(parameters('azureReuseConfig').existingAoaiResourceGroupName), variables('_azureReuseConfigDefaults').existingAoaiResourceGroupName, parameters('azureReuseConfig').existingAoaiResourceGroupName), 'existingAoaiName', if(empty(parameters('azureReuseConfig').existingAoaiName), variables('_azureReuseConfigDefaults').existingAoaiName, parameters('azureReuseConfig').existingAoaiName), 'aiServicesReuse', if(empty(parameters('azureReuseConfig').aiServicesReuse), variables('_azureReuseConfigDefaults').aiServicesReuse, equals(toLower(parameters('azureReuseConfig').aiServicesReuse), 'true')), 'existingAiServicesResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiServicesResourceGroupName), variables('_azureReuseConfigDefaults').existingAiServicesResourceGroupName, parameters('azureReuseConfig').existingAiServicesResourceGroupName), 'existingAiServicesName', if(empty(parameters('azureReuseConfig').existingAiServicesName), variables('_azureReuseConfigDefaults').existingAiServicesName, parameters('azureReuseConfig').existingAiServicesName), 'appConfigReuse', false(), 'existingAppConfigResourceGroupName', '', 'existingAppConfigName', '', 'appInsightsReuse', if(empty(parameters('azureReuseConfig').appInsightsReuse), variables('_azureReuseConfigDefaults').appInsightsReuse, equals(toLower(parameters('azureReuseConfig').appInsightsReuse), 'true')), 'existingAppInsightsResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppInsightsResourceGroupName), variables('_azureReuseConfigDefaults').existingAppInsightsResourceGroupName, parameters('azureReuseConfig').existingAppInsightsResourceGroupName), 'existingAppInsightsName', if(empty(parameters('azureReuseConfig').existingAppInsightsName), variables('_azureReuseConfigDefaults').existingAppInsightsName, parameters('azureReuseConfig').existingAppInsightsName), 'logAnalyticsWorkspaceReuse', if(empty(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), variables('_azureReuseConfigDefaults').logAnalyticsWorkspaceReuse, equals(toLower(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), 'true')), 'existingLogAnalyticsWorkspaceResourceId', if(empty(parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), variables('_azureReuseConfigDefaults').existingLogAnalyticsWorkspaceResourceId, parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), 'appServicePlanReuse', if(empty(parameters('azureReuseConfig').appServicePlanReuse), variables('_azureReuseConfigDefaults').appServicePlanReuse, equals(toLower(parameters('azureReuseConfig').appServicePlanReuse), 'true')), 'existingAppServicePlanResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServicePlanResourceGroupName, parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), 'existingAppServicePlanName', if(empty(parameters('azureReuseConfig').existingAppServicePlanName), variables('_azureReuseConfigDefaults').existingAppServicePlanName, parameters('azureReuseConfig').existingAppServicePlanName), 'aiSearchReuse', if(empty(parameters('azureReuseConfig').aiSearchReuse), variables('_azureReuseConfigDefaults').aiSearchReuse, equals(toLower(parameters('azureReuseConfig').aiSearchReuse), 'true')), 'existingAiSearchResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiSearchResourceGroupName), variables('_azureReuseConfigDefaults').existingAiSearchResourceGroupName, parameters('azureReuseConfig').existingAiSearchResourceGroupName), 'existingAiSearchName', if(empty(parameters('azureReuseConfig').existingAiSearchName), variables('_azureReuseConfigDefaults').existingAiSearchName, parameters('azureReuseConfig').existingAiSearchName), 'cosmosDbReuse', if(empty(parameters('azureReuseConfig').cosmosDbReuse), variables('_azureReuseConfigDefaults').cosmosDbReuse, equals(toLower(parameters('azureReuseConfig').cosmosDbReuse), 'true')), 'existingCosmosDbResourceGroupName', if(empty(parameters('azureReuseConfig').existingCosmosDbResourceGroupName), variables('_azureReuseConfigDefaults').existingCosmosDbResourceGroupName, parameters('azureReuseConfig').existingCosmosDbResourceGroupName), 'existingCosmosDbAccountName', if(empty(parameters('azureReuseConfig').existingCosmosDbAccountName), variables('_azureReuseConfigDefaults').existingCosmosDbAccountName, parameters('azureReuseConfig').existingCosmosDbAccountName), 'existingCosmosDbDatabaseName', if(empty(parameters('azureReuseConfig').existingCosmosDbDatabaseName), variables('_azureReuseConfigDefaults').existingCosmosDbDatabaseName, parameters('azureReuseConfig').existingCosmosDbDatabaseName), 'keyVaultReuse', if(empty(parameters('azureReuseConfig').keyVaultReuse), variables('_azureReuseConfigDefaults').keyVaultReuse, equals(toLower(parameters('azureReuseConfig').keyVaultReuse), 'true')), 'existingKeyVaultResourceGroupName', if(empty(parameters('azureReuseConfig').existingKeyVaultResourceGroupName), variables('_azureReuseConfigDefaults').existingKeyVaultResourceGroupName, parameters('azureReuseConfig').existingKeyVaultResourceGroupName), 'existingKeyVaultName', if(empty(parameters('azureReuseConfig').existingKeyVaultName), variables('_azureReuseConfigDefaults').existingKeyVaultName, parameters('azureReuseConfig').existingKeyVaultName), 'storageReuse', if(empty(parameters('azureReuseConfig').storageReuse), variables('_azureReuseConfigDefaults').storageReuse, equals(toLower(parameters('azureReuseConfig').storageReuse), 'true')), 'existingStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingStorageResourceGroupName, parameters('azureReuseConfig').existingStorageResourceGroupName), 'existingStorageName', if(empty(parameters('azureReuseConfig').existingStorageName), variables('_azureReuseConfigDefaults').existingStorageName, parameters('azureReuseConfig').existingStorageName), 'vnetReuse', if(empty(parameters('azureReuseConfig').vnetReuse), variables('_azureReuseConfigDefaults').vnetReuse, equals(toLower(parameters('azureReuseConfig').vnetReuse), 'true')), 'existingVnetResourceGroupName', if(empty(parameters('azureReuseConfig').existingVnetResourceGroupName), variables('_azureReuseConfigDefaults').existingVnetResourceGroupName, parameters('azureReuseConfig').existingVnetResourceGroupName), 'existingVnetName', if(empty(parameters('azureReuseConfig').existingVnetName), variables('_azureReuseConfigDefaults').existingVnetName, parameters('azureReuseConfig').existingVnetName), 'orchestratorFunctionAppReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppReuse), 'true')), 'existingOrchestratorFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), 'existingOrchestratorFunctionAppName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppName, parameters('azureReuseConfig').existingOrchestratorFunctionAppName), 'dataIngestionFunctionAppReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), 'true')), 'existingDataIngestionFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), 'existingDataIngestionFunctionAppName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppName, parameters('azureReuseConfig').existingDataIngestionFunctionAppName), 'appServiceReuse', if(empty(parameters('azureReuseConfig').appServiceReuse), variables('_azureReuseConfigDefaults').appServiceReuse, equals(toLower(parameters('azureReuseConfig').appServiceReuse), 'true')), 'existingAppServiceName', if(empty(parameters('azureReuseConfig').existingAppServiceName), variables('_azureReuseConfigDefaults').existingAppServiceName, parameters('azureReuseConfig').existingAppServiceName), 'existingAppServiceNameResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServiceNameResourceGroupName, parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), 'orchestratorFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), 'true')), 'existingOrchestratorFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), 'existingOrchestratorFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), 'dataIngestionFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), 'true')), 'existingDataIngestionFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), 'existingDataIngestionFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName)))]"
+    "_azureReuseConfig": "[union(variables('_azureReuseConfigDefaults'), createObject('aoaiReuse', if(empty(parameters('azureReuseConfig').aoaiReuse), variables('_azureReuseConfigDefaults').aoaiReuse, equals(toLower(parameters('azureReuseConfig').aoaiReuse), 'true')), 'existingAoaiResourceGroupName', if(empty(parameters('azureReuseConfig').existingAoaiResourceGroupName), variables('_azureReuseConfigDefaults').existingAoaiResourceGroupName, parameters('azureReuseConfig').existingAoaiResourceGroupName), 'existingAoaiName', if(empty(parameters('azureReuseConfig').existingAoaiName), variables('_azureReuseConfigDefaults').existingAoaiName, parameters('azureReuseConfig').existingAoaiName), 'aiServicesReuse', if(empty(parameters('azureReuseConfig').aiServicesReuse), variables('_azureReuseConfigDefaults').aiServicesReuse, equals(toLower(parameters('azureReuseConfig').aiServicesReuse), 'true')), 'existingAiServicesResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiServicesResourceGroupName), variables('_azureReuseConfigDefaults').existingAiServicesResourceGroupName, parameters('azureReuseConfig').existingAiServicesResourceGroupName), 'existingAiServicesName', if(empty(parameters('azureReuseConfig').existingAiServicesName), variables('_azureReuseConfigDefaults').existingAiServicesName, parameters('azureReuseConfig').existingAiServicesName), 'appConfigReuse', false(), 'existingAppConfigResourceGroupName', '', 'existingAppConfigName', '', 'appInsightsReuse', if(empty(parameters('azureReuseConfig').appInsightsReuse), variables('_azureReuseConfigDefaults').appInsightsReuse, equals(toLower(parameters('azureReuseConfig').appInsightsReuse), 'true')), 'existingAppInsightsResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppInsightsResourceGroupName), variables('_azureReuseConfigDefaults').existingAppInsightsResourceGroupName, parameters('azureReuseConfig').existingAppInsightsResourceGroupName), 'existingAppInsightsName', if(empty(parameters('azureReuseConfig').existingAppInsightsName), variables('_azureReuseConfigDefaults').existingAppInsightsName, parameters('azureReuseConfig').existingAppInsightsName), 'logAnalyticsWorkspaceReuse', if(empty(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), variables('_azureReuseConfigDefaults').logAnalyticsWorkspaceReuse, equals(toLower(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), 'true')), 'existingLogAnalyticsWorkspaceResourceId', if(empty(parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), variables('_azureReuseConfigDefaults').existingLogAnalyticsWorkspaceResourceId, parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), 'appServicePlanReuse', if(empty(parameters('azureReuseConfig').appServicePlanReuse), variables('_azureReuseConfigDefaults').appServicePlanReuse, equals(toLower(parameters('azureReuseConfig').appServicePlanReuse), 'true')), 'existingAppServicePlanResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServicePlanResourceGroupName, parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), 'existingAppServicePlanName', if(empty(parameters('azureReuseConfig').existingAppServicePlanName), variables('_azureReuseConfigDefaults').existingAppServicePlanName, parameters('azureReuseConfig').existingAppServicePlanName), 'aiSearchReuse', if(empty(parameters('azureReuseConfig').aiSearchReuse), variables('_azureReuseConfigDefaults').aiSearchReuse, equals(toLower(parameters('azureReuseConfig').aiSearchReuse), 'true')), 'existingAiSearchResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiSearchResourceGroupName), variables('_azureReuseConfigDefaults').existingAiSearchResourceGroupName, parameters('azureReuseConfig').existingAiSearchResourceGroupName), 'existingAiSearchName', if(empty(parameters('azureReuseConfig').existingAiSearchName), variables('_azureReuseConfigDefaults').existingAiSearchName, parameters('azureReuseConfig').existingAiSearchName), 'cosmosDbReuse', if(empty(parameters('azureReuseConfig').cosmosDbReuse), variables('_azureReuseConfigDefaults').cosmosDbReuse, equals(toLower(parameters('azureReuseConfig').cosmosDbReuse), 'true')), 'existingCosmosDbResourceGroupName', if(empty(parameters('azureReuseConfig').existingCosmosDbResourceGroupName), variables('_azureReuseConfigDefaults').existingCosmosDbResourceGroupName, parameters('azureReuseConfig').existingCosmosDbResourceGroupName), 'existingCosmosDbAccountName', if(empty(parameters('azureReuseConfig').existingCosmosDbAccountName), variables('_azureReuseConfigDefaults').existingCosmosDbAccountName, parameters('azureReuseConfig').existingCosmosDbAccountName), 'existingCosmosDbDatabaseName', if(empty(parameters('azureReuseConfig').existingCosmosDbDatabaseName), variables('_azureReuseConfigDefaults').existingCosmosDbDatabaseName, parameters('azureReuseConfig').existingCosmosDbDatabaseName), 'keyVaultReuse', if(empty(parameters('azureReuseConfig').keyVaultReuse), variables('_azureReuseConfigDefaults').keyVaultReuse, equals(toLower(parameters('azureReuseConfig').keyVaultReuse), 'true')), 'existingKeyVaultResourceGroupName', if(empty(parameters('azureReuseConfig').existingKeyVaultResourceGroupName), variables('_azureReuseConfigDefaults').existingKeyVaultResourceGroupName, parameters('azureReuseConfig').existingKeyVaultResourceGroupName), 'existingKeyVaultName', if(empty(parameters('azureReuseConfig').existingKeyVaultName), variables('_azureReuseConfigDefaults').existingKeyVaultName, parameters('azureReuseConfig').existingKeyVaultName), 'storageReuse', if(empty(parameters('azureReuseConfig').storageReuse), variables('_azureReuseConfigDefaults').storageReuse, equals(toLower(parameters('azureReuseConfig').storageReuse), 'true')), 'existingStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingStorageResourceGroupName, parameters('azureReuseConfig').existingStorageResourceGroupName), 'existingStorageName', if(empty(parameters('azureReuseConfig').existingStorageName), variables('_azureReuseConfigDefaults').existingStorageName, parameters('azureReuseConfig').existingStorageName), 'vnetReuse', if(contains(parameters('azureReuseConfig'), 'vnetReuse'), equals(toLower(parameters('azureReuseConfig').vnetReuse), 'true'), parameters('vnetReuse')), 'existingVnetResourceGroupName', if(contains(parameters('azureReuseConfig'), 'existingVnetResourceGroupName'), parameters('azureReuseConfig').existingVnetResourceGroupName, parameters('existingVnetResourceGroupName')), 'existingVnetName', if(contains(parameters('azureReuseConfig'), 'existingVnetName'), parameters('azureReuseConfig').existingVnetName, parameters('existingVnetName')), 'existingAutomationPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingAutomationPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingAutomationPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingAutomationPrivateDnsZoneResourceId), 'existingOdsPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingOdsPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingOdsPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingOdsPrivateDnsZoneResourceId), 'existingOmsPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingOmsPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingOmsPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingOmsPrivateDnsZoneResourceId), 'existingAzureMonitorPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingAzureMonitorPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId), 'existingKeyVaultPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingKeyVaultPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingKeyVaultPrivateDnsZoneResourceId, parameters('existingKeyVaultPrivateDnsZoneResourceId')), 'existingCognitiveServicesPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingCognitiveServicesPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId, parameters('existingCognitiveServicesPrivateDnsZoneResourceId')), 'existingOpenAiPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingOpenAiPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId, parameters('existingOpenAiPrivateDnsZoneResourceId')), 'existingAiServicesPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingAiServicesPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId, parameters('existingAiServicesPrivateDnsZoneResourceId')), 'existingDocumentsPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingDocumentsPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingDocumentsPrivateDnsZoneResourceId, parameters('existingDocumentsPrivateDnsZoneResourceId')), 'existingBlobPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingBlobPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingBlobPrivateDnsZoneResourceId, parameters('existingBlobPrivateDnsZoneResourceId')), 'existingQueuePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingQueuePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingQueuePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingQueuePrivateDnsZoneResourceId), 'existingTablePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingTablePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingTablePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingTablePrivateDnsZoneResourceId), 'existingFilePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingFilePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingFilePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingFilePrivateDnsZoneResourceId), 'existingBastionHostResourceId', if(empty(parameters('azureReuseConfig').existingBastionHostResourceId), variables('_azureReuseConfigDefaults').existingBastionHostResourceId, parameters('azureReuseConfig').existingBastionHostResourceId), 'orchestratorFunctionAppReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppReuse), 'true')), 'existingOrchestratorFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), 'existingOrchestratorFunctionAppName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppName, parameters('azureReuseConfig').existingOrchestratorFunctionAppName), 'dataIngestionFunctionAppReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), 'true')), 'existingDataIngestionFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), 'existingDataIngestionFunctionAppName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppName, parameters('azureReuseConfig').existingDataIngestionFunctionAppName), 'appServiceReuse', if(empty(parameters('azureReuseConfig').appServiceReuse), variables('_azureReuseConfigDefaults').appServiceReuse, equals(toLower(parameters('azureReuseConfig').appServiceReuse), 'true')), 'existingAppServiceName', if(empty(parameters('azureReuseConfig').existingAppServiceName), variables('_azureReuseConfigDefaults').existingAppServiceName, parameters('azureReuseConfig').existingAppServiceName), 'existingAppServiceNameResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServiceNameResourceGroupName, parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), 'orchestratorFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), 'true')), 'existingOrchestratorFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), 'existingOrchestratorFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), 'dataIngestionFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), 'true')), 'existingDataIngestionFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), 'existingDataIngestionFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName)))]"
   },
   "resources": {
     "storageContributorRole": {
@@ -1522,7 +1616,7 @@
       ]
     },
     "automationDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingAutomationPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "automation-dnzones",
@@ -1604,7 +1698,7 @@
       ]
     },
     "odsInsightsDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingOdsPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "odsinsights-dnzones",
@@ -1686,7 +1780,7 @@
       ]
     },
     "omsInsightsDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingOmsPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "omsinsights-dnzones",
@@ -1768,7 +1862,7 @@
       ]
     },
     "azMonitorDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "azmonitor-dnzones",
@@ -1850,7 +1944,7 @@
       ]
     },
     "logAnalyticsPe": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(variables('_networkIsolation'), or(not(empty(variables('_azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId)), not(variables('_vnetReuse'))))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "[variables('logAnalyticsPEName')]",
@@ -1878,7 +1972,7 @@
               "azuremonitor"
             ]
           },
-          "dnsZoneId": "[if(variables('_networkIsolation'), createObject('value', reference('azMonitorDnsZone').outputs.id.value), createObject('value', ''))]"
+          "dnsZoneId": "[if(variables('_networkIsolation'), if(not(empty(variables('_azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId)), createObject('value', variables('_azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId), createObject('value', reference('azMonitorDnsZone').outputs.id.value)), createObject('value', ''))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -2380,7 +2474,7 @@
       ]
     },
     "vaultDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingKeyVaultPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "vault-dnzones",
@@ -2462,7 +2556,7 @@
       ]
     },
     "keyvaultpe": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(variables('_networkIsolation'), or(not(empty(variables('_azureReuseConfig').existingKeyVaultPrivateDnsZoneResourceId)), not(variables('_vnetReuse'))))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "keyvaultpe",
@@ -2490,7 +2584,7 @@
               "Vault"
             ]
           },
-          "dnsZoneId": "[if(variables('_networkIsolation'), createObject('value', reference('vaultDnsZone').outputs.id.value), createObject('value', ''))]"
+          "dnsZoneId": "[if(variables('_networkIsolation'), if(not(empty(variables('_azureReuseConfig').existingKeyVaultPrivateDnsZoneResourceId)), createObject('value', variables('_azureReuseConfig').existingKeyVaultPrivateDnsZoneResourceId), createObject('value', reference('vaultDnsZone').outputs.id.value)), createObject('value', ''))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3372,7 +3466,7 @@
       ]
     },
     "cogservicesDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "aiservices-dnzones",
@@ -3454,7 +3548,7 @@
       ]
     },
     "openaiDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "openai-dnzones",
@@ -3536,7 +3630,7 @@
       ]
     },
     "aiServicesDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "aiservices-services-dnzones",
@@ -3618,7 +3712,7 @@
       ]
     },
     "documentsDnsZone": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingDocumentsPrivateDnsZoneResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "documents-dnzones",
@@ -3700,7 +3794,7 @@
       ]
     },
     "cosmospe": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(variables('_networkIsolation'), or(not(empty(variables('_azureReuseConfig').existingDocumentsPrivateDnsZoneResourceId)), not(variables('_vnetReuse'))))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "cosmospe",
@@ -3728,7 +3822,7 @@
               "Sql"
             ]
           },
-          "dnsZoneId": "[if(variables('_networkIsolation'), createObject('value', reference('documentsDnsZone').outputs.id.value), createObject('value', ''))]"
+          "dnsZoneId": "[if(variables('_networkIsolation'), if(not(empty(variables('_azureReuseConfig').existingDocumentsPrivateDnsZoneResourceId)), createObject('value', variables('_azureReuseConfig').existingDocumentsPrivateDnsZoneResourceId), createObject('value', reference('documentsDnsZone').outputs.id.value)), createObject('value', ''))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3884,7 +3978,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "4760644907643115178"
+              "templateHash": "10979526790381580342"
             }
           },
           "parameters": {
@@ -4062,8 +4156,7 @@
                 "locations": "[variables('locations')]",
                 "databaseAccountOfferType": "Standard",
                 "enableAutomaticFailover": "[parameters('systemManagedFailover')]",
-                "publicNetworkAccess": "[parameters('publicNetworkAccess')]",
-                "enableAnalyticalStorage": true
+                "publicNetworkAccess": "[parameters('publicNetworkAccess')]"
               }
             },
             {
@@ -4094,7 +4187,6 @@
                     ],
                     "kind": "Hash"
                   },
-                  "analyticalStorageTtl": "[parameters('analyticalStoreTTL')]",
                   "indexingPolicy": {
                     "indexingMode": "consistent",
                     "includedPaths": [
@@ -4129,7 +4221,6 @@
                     ],
                     "kind": "Hash"
                   },
-                  "analyticalStorageTtl": "[parameters('analyticalStoreTTL')]",
                   "indexingPolicy": {
                     "indexingMode": "none",
                     "automatic": false
@@ -4219,7 +4310,7 @@
           "aiFoundryConfiguration": {
             "value": {
               "accountName": "[variables('aiFoundryName')]",
-              "location": "[parameters('aoaiLocation')]",
+              "location": "[variables('_aoaiLocation')]",
               "disableLocalAuth": false
             }
           },
@@ -4229,11 +4320,11 @@
           "aiModelDeployments": {
             "value": [
               {
-                "name": "gpt-5-mini",
+                "name": "chat",
                 "model": {
                   "format": "OpenAI",
-                  "name": "gpt-5-mini",
-                  "version": "2025-08-07"
+                  "name": "gpt-5.4-nano",
+                  "version": "2026-03-17"
                 },
                 "sku": {
                   "name": "GlobalStandard",
@@ -29747,7 +29838,7 @@
       ]
     },
     "aiFoundryPe": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(variables('_networkIsolation'), or(or(or(not(empty(variables('_azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId)), not(empty(variables('_azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId))), not(empty(variables('_azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId))), not(variables('_vnetReuse'))))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "aiFoundryPe",
@@ -29779,9 +29870,9 @@
           },
           "dnsZoneIds": {
             "value": [
-              "[reference('cogservicesDnsZone').outputs.id.value]",
-              "[reference('openaiDnsZone').outputs.id.value]",
-              "[reference('aiServicesDnsZone').outputs.id.value]"
+              "[if(not(empty(variables('_azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId)), variables('_azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId, reference('cogservicesDnsZone').outputs.id.value)]",
+              "[if(not(empty(variables('_azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId)), variables('_azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId, reference('openaiDnsZone').outputs.id.value)]",
+              "[if(not(empty(variables('_azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId)), variables('_azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId, reference('aiServicesDnsZone').outputs.id.value)]"
             ]
           }
         },
@@ -29890,7 +29981,7 @@
       ]
     },
     "vnet": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[variables('_networkIsolation')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "virtual-network",
@@ -29913,7 +30004,16 @@
             "value": "[variables('_deployVPN')]"
           },
           "existingVnetResourceGroupName": {
-            "value": "[variables('_azureReuseConfig').existingVnetResourceGroupName]"
+            "value": "[variables('_existingVnetResourceGroupName')]"
+          },
+          "aiSubnetName": {
+            "value": "[parameters('aiSubnetName')]"
+          },
+          "appServicesSubnetName": {
+            "value": "[parameters('appServicesSubnetName')]"
+          },
+          "databaseSubnetName": {
+            "value": "[parameters('databaseSubnetName')]"
           },
           "tags": {
             "value": "[variables('tags')]"
@@ -29938,7 +30038,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "11767209190018683862"
+              "templateHash": "17805902092503611157"
             }
           },
           "parameters": {
@@ -30077,7 +30177,7 @@
                   },
                   "delegations": [
                     {
-                      "name": "[if(equals(parameters('functionAppHostPlan'), 'FlexConsumption'), 'flexConsumptionDelegation', parameters('appServicePlanName'))]",
+                      "name": "appServicesDelegation",
                       "properties": {
                         "serviceName": "[if(equals(parameters('functionAppHostPlan'), 'FlexConsumption'), 'Microsoft.App/environments', 'Microsoft.Web/serverFarms')]",
                         "actions": [
@@ -30132,10 +30232,12 @@
                 }
               }
             ],
-            "allSubnets": "[if(parameters('deployVPN'), concat(variables('subnets'), createArray(createObject('name', parameters('gatewaySubnetName'), 'properties', createObject('addressPrefix', parameters('gatewaySubnetPrefix'), 'privateEndpointNetworkPolicies', 'Enabled', 'privateLinkServiceNetworkPolicies', 'Enabled', 'delegations', createArray())))), variables('subnets'))]"
+            "allSubnets": "[if(parameters('deployVPN'), concat(variables('subnets'), createArray(createObject('name', parameters('gatewaySubnetName'), 'properties', createObject('addressPrefix', parameters('gatewaySubnetPrefix'), 'privateEndpointNetworkPolicies', 'Enabled', 'privateLinkServiceNetworkPolicies', 'Enabled', 'delegations', createArray())))), variables('subnets'))]",
+            "existingVnetId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}', subscription().subscriptionId, parameters('existingVnetResourceGroupName'), parameters('vnetName'))]"
           },
           "resources": [
             {
+              "condition": "[not(parameters('vnetReuse'))]",
               "type": "Microsoft.Network/networkSecurityGroups",
               "apiVersion": "2024-05-01",
               "name": "[parameters('aiNsgName')]",
@@ -30146,6 +30248,7 @@
               }
             },
             {
+              "condition": "[not(parameters('vnetReuse'))]",
               "type": "Microsoft.Network/networkSecurityGroups",
               "apiVersion": "2024-05-01",
               "name": "[parameters('appIntNsgName')]",
@@ -30156,6 +30259,7 @@
               }
             },
             {
+              "condition": "[not(parameters('vnetReuse'))]",
               "type": "Microsoft.Network/networkSecurityGroups",
               "apiVersion": "2024-05-01",
               "name": "[parameters('appServicesNsgName')]",
@@ -30166,6 +30270,7 @@
               }
             },
             {
+              "condition": "[not(parameters('vnetReuse'))]",
               "type": "Microsoft.Network/networkSecurityGroups",
               "apiVersion": "2024-05-01",
               "name": "[parameters('databaseNsgName')]",
@@ -30176,6 +30281,7 @@
               }
             },
             {
+              "condition": "[not(parameters('vnetReuse'))]",
               "type": "Microsoft.Network/networkSecurityGroups",
               "apiVersion": "2024-05-01",
               "name": "[parameters('bastionNsgName')]",
@@ -30329,35 +30435,35 @@
           "outputs": {
             "name": {
               "type": "string",
-              "value": "[if(parameters('vnetReuse'), parameters('vnetName'), parameters('vnetName'))]"
+              "value": "[parameters('vnetName')]"
             },
             "id": {
               "type": "string",
-              "value": "[if(parameters('vnetReuse'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingVnetResourceGroupName')), 'Microsoft.Network/virtualNetworks', parameters('vnetName')), resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')))]"
+              "value": "[if(parameters('vnetReuse'), variables('existingVnetId'), resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')))]"
             },
             "subnets": {
               "type": "array",
-              "value": "[if(parameters('vnetReuse'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('existingVnetResourceGroupName')), 'Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets, reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets)]"
+              "value": "[if(parameters('vnetReuse'), createArray(), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets)]"
             },
             "aiSubId": {
               "type": "string",
-              "value": "[if(parameters('vnetReuse'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('aiSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[0].id)]"
+              "value": "[if(parameters('vnetReuse'), format('{0}/subnets/{1}', variables('existingVnetId'), parameters('aiSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[0].id)]"
             },
             "appServicesSubId": {
               "type": "string",
-              "value": "[if(parameters('vnetReuse'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('appServicesSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[1].id)]"
+              "value": "[if(parameters('vnetReuse'), format('{0}/subnets/{1}', variables('existingVnetId'), parameters('appServicesSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[1].id)]"
             },
             "databaseSubId": {
               "type": "string",
-              "value": "[if(parameters('vnetReuse'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('databaseSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[2].id)]"
+              "value": "[if(parameters('vnetReuse'), format('{0}/subnets/{1}', variables('existingVnetId'), parameters('databaseSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[2].id)]"
             },
             "bastionSubId": {
               "type": "string",
-              "value": "[if(parameters('vnetReuse'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('bastionSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[3].id)]"
+              "value": "[if(parameters('vnetReuse'), format('{0}/subnets/{1}', variables('existingVnetId'), parameters('bastionSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[3].id)]"
             },
             "appIntSubId": {
               "type": "string",
-              "value": "[if(parameters('vnetReuse'), resourceId(parameters('existingVnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('appIntSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[4].id)]"
+              "value": "[if(parameters('vnetReuse'), format('{0}/subnets/{1}', variables('existingVnetId'), parameters('appIntSubnetName')), reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2024-05-01').subnets[4].id)]"
             }
           }
         }
@@ -31004,7 +31110,7 @@
               },
               {
                 "name": "OPENAI_MODEL",
-                "value": "gpt-5-mini"
+                "value": "chat"
               },
               {
                 "name": "COSMOS_DB_DATABASE_NAME",
@@ -54387,7 +54493,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54438,6 +54544,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -54446,6 +54559,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -54482,7 +54596,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54533,6 +54647,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -54541,6 +54662,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -54577,7 +54699,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54628,6 +54750,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -54636,6 +54765,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -54672,7 +54802,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54723,6 +54853,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -54731,6 +54868,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -54767,7 +54905,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54818,6 +54956,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -54826,6 +54971,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -54862,7 +55008,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54913,6 +55059,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -54921,6 +55074,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -54957,7 +55111,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -55008,6 +55162,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -55016,6 +55177,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -55033,6 +55195,7 @@
       ]
     },
     "resourceGroupRoleAssignment": {
+      "condition": "[and(not(variables('_vnetReuse')), empty(parameters('skipRoleAssignmentIds')))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "[format('{0}-role-appconfig', variables('resourceGroupName'))]",
@@ -55042,7 +55205,12 @@
         },
         "mode": "Incremental",
         "parameters": {
-          "roleAssignments": "[if(not(equals(parameters('userPrincipalId'), '')), createObject('value', concat(variables('contributorIdentityAssignments'), concat(variables('appConfigDataOwnerIdentityAssignments'), createArray(createObject('principalId', reference('uaiFrontendMsi').outputs.principalId.value, 'roleDefinitionId', resourceId('Microsoft.Authorization/roleDefinitions', variables('roles').configuration.appConfigurationDataOwner), 'principalType', 'ServicePrincipal'))), createArray(createObject('principalId', parameters('userPrincipalId'), 'roleDefinitionId', resourceId('Microsoft.Authorization/roleDefinitions', variables('roles').ai.cognitiveServicesOpenAIUser), 'principalType', 'User')))), createObject('value', concat(variables('contributorIdentityAssignments'), createArray(), concat(variables('appConfigDataOwnerIdentityAssignments'), createArray(createObject('principalId', reference('uaiFrontendMsi').outputs.principalId.value, 'roleDefinitionId', resourceId('Microsoft.Authorization/roleDefinitions', variables('roles').configuration.appConfigurationDataOwner), 'principalType', 'ServicePrincipal'))))))]"
+          "skipRoleAssignmentIds": {
+            "value": "[parameters('skipRoleAssignmentIds')]"
+          },
+          "roleAssignments": {
+            "value": "[concat(variables('contributorIdentityAssignments'), concat(variables('appConfigDataOwnerIdentityAssignments'), createArray(createObject('principalId', reference('uaiFrontendMsi').outputs.principalId.value, 'roleDefinitionId', resourceId('Microsoft.Authorization/roleDefinitions', variables('roles').configuration.appConfigurationDataOwner), 'principalType', 'ServicePrincipal'))))]"
+          }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -55052,7 +55220,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14793152062909159974"
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -55103,6 +55271,13 @@
               "metadata": {
                 "description": "Role assignments to create for the Resource Group."
               }
+            },
+            "skipRoleAssignmentIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Role assignment resource IDs to skip because equivalent assignments already exist."
+              }
             }
           },
           "resources": {
@@ -55111,6 +55286,7 @@
                 "name": "assignment",
                 "count": "[length(parameters('roleAssignments'))]"
               },
+              "condition": "[not(contains(parameters('skipRoleAssignmentIds'), guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "name": "[guid(resourceGroup().id, parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
@@ -55128,7 +55304,7 @@
       ]
     },
     "testVmBastionHost": {
-      "condition": "[and(variables('_deployVM'), variables('_networkIsolation'))]",
+      "condition": "[and(and(variables('_deployVM'), variables('_networkIsolation')), empty(variables('_azureReuseConfig').existingBastionHostResourceId))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "bastionHost",
@@ -57375,6 +57551,11 @@
           },
           "zone": {
             "value": 0
+          },
+          "extensionAntiMalwareConfig": {
+            "value": {
+              "enabled": "[parameters('vmAntiMalware')]"
+            }
           },
           "nicConfigurations": {
             "value": [
