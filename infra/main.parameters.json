@@ -108,6 +108,7 @@
           "existingKeyVaultPrivateDnsZoneResourceId": "${EXISTING_KEY_VAULT_PRIVATE_DNS_ZONE_RESOURCE_ID}",
           "existingAzureMonitorPrivateDnsZoneResourceId": "${EXISTING_AZURE_MONITOR_PRIVATE_DNS_ZONE_RESOURCE_ID}",
           "existingBlobPrivateDnsZoneResourceId": "${EXISTING_BLOB_PRIVATE_DNS_ZONE_RESOURCE_ID}",
+          "existingWebsitesPrivateDnsZoneResourceId": "${EXISTING_WEBSITES_PRIVATE_DNS_ZONE_RESOURCE_ID}",
           "existingQueuePrivateDnsZoneResourceId": "${EXISTING_QUEUE_PRIVATE_DNS_ZONE_RESOURCE_ID}",
           "existingTablePrivateDnsZoneResourceId": "${EXISTING_TABLE_PRIVATE_DNS_ZONE_RESOURCE_ID}",
           "existingFilePrivateDnsZoneResourceId": "${EXISTING_FILE_PRIVATE_DNS_ZONE_RESOURCE_ID}"

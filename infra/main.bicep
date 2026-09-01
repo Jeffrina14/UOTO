@@ -156,6 +156,9 @@ param existingKeyVaultPrivateDnsZoneResourceId string = ''
 
 @description('Existing Blob private DNS zone resource ID.')
 param existingBlobPrivateDnsZoneResourceId string = ''
+
+@description('Existing App Service private DNS zone resource ID.')
+param existingWebsitesPrivateDnsZoneResourceId string = ''
 @description('Role assignment IDs that already exist and should not be recreated.')
 param skipRoleAssignmentIds array = []
 
@@ -986,7 +989,7 @@ module hostingPlan 'br/public:avm/res/web/serverfarm:0.1.1' = {
   }
 }
 
-module websitesDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+module websitesDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingWebsitesPrivateDnsZoneResourceId)) {
   // scope : resourceGroup
   name: 'websites-dnszones'
   params: {
@@ -996,7 +999,7 @@ module websitesDnsZone './modules/network/private-dns-zones.bicep' = if (_networ
   }
 }
 
-module processingFunctionAppPe './modules/network/private-endpoint.bicep' = if (_networkIsolation && !_vnetReuse) {
+module processingFunctionAppPe './modules/network/private-endpoint.bicep' = if (_networkIsolation && (!empty(_azureReuseConfig.existingWebsitesPrivateDnsZoneResourceId) || !_vnetReuse)) {
   // scope : resourceGroup
   name: _processingfunctionAppPe
   params: {
@@ -1006,7 +1009,7 @@ module processingFunctionAppPe './modules/network/private-endpoint.bicep' = if (
     subnetId: _networkIsolation?vnet.outputs.aiSubId:''
     serviceId: processingFunctionApp.outputs.resourceId
     groupIds: ['sites']
-    dnsZoneId: _networkIsolation?websitesDnsZone.outputs.id:''
+    dnsZoneId: _networkIsolation ? (!empty(_azureReuseConfig.existingWebsitesPrivateDnsZoneResourceId) ? _azureReuseConfig.existingWebsitesPrivateDnsZoneResourceId : websitesDnsZone!.outputs.id) : ''
   }
 }
 
@@ -1611,6 +1614,7 @@ var _azureReuseConfigDefaults = {
   existingAiServicesPrivateDnsZoneResourceId: ''
   existingDocumentsPrivateDnsZoneResourceId: ''
   existingBlobPrivateDnsZoneResourceId: ''
+  existingWebsitesPrivateDnsZoneResourceId: ''
   existingQueuePrivateDnsZoneResourceId: ''
   existingTablePrivateDnsZoneResourceId: ''
   existingFilePrivateDnsZoneResourceId: ''
@@ -1680,6 +1684,7 @@ var _azureReuseConfig = union(_azureReuseConfigDefaults, {
     existingAiServicesPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingAiServicesPrivateDnsZoneResourceId') ? azureReuseConfig.existingAiServicesPrivateDnsZoneResourceId : existingAiServicesPrivateDnsZoneResourceId)
     existingDocumentsPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingDocumentsPrivateDnsZoneResourceId') ? azureReuseConfig.existingDocumentsPrivateDnsZoneResourceId : existingDocumentsPrivateDnsZoneResourceId)
     existingBlobPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingBlobPrivateDnsZoneResourceId') ? azureReuseConfig.existingBlobPrivateDnsZoneResourceId : existingBlobPrivateDnsZoneResourceId)
+    existingWebsitesPrivateDnsZoneResourceId: (contains(azureReuseConfig, 'existingWebsitesPrivateDnsZoneResourceId') ? azureReuseConfig.existingWebsitesPrivateDnsZoneResourceId : existingWebsitesPrivateDnsZoneResourceId)
     existingQueuePrivateDnsZoneResourceId: (empty(azureReuseConfig.existingQueuePrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingQueuePrivateDnsZoneResourceId : azureReuseConfig.existingQueuePrivateDnsZoneResourceId)
     existingTablePrivateDnsZoneResourceId: (empty(azureReuseConfig.existingTablePrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingTablePrivateDnsZoneResourceId : azureReuseConfig.existingTablePrivateDnsZoneResourceId)
     existingFilePrivateDnsZoneResourceId: (empty(azureReuseConfig.existingFilePrivateDnsZoneResourceId) ? _azureReuseConfigDefaults.existingFilePrivateDnsZoneResourceId : azureReuseConfig.existingFilePrivateDnsZoneResourceId)
