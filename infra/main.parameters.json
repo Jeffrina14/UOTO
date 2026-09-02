@@ -50,6 +50,9 @@
       "databaseSubnetName": {
         "value": "${DATABASE_SUBNET_NAME}"
       },
+      "storagePrivateEndpointSubnetName": {
+        "value": "${STORAGE_PRIVATE_ENDPOINT_SUBNET_NAME}"
+      },
       "azureReuseConfig":{
         "value": {
           "aoaiReuse": "${AOAI_REUSE}",

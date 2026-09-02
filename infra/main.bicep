@@ -139,6 +139,9 @@ param appServicesSubnetName string = 'appServicesSubnet'
 @description('Existing or new database/private endpoint subnet name used for Cosmos DB.')
 param databaseSubnetName string = 'databaseSubnet'
 
+@description('Existing subnet name used for storage Queue and Table private endpoints when reusing a VNet.')
+param storagePrivateEndpointSubnetName string = ''
+
 @description('Existing Cosmos private DNS zone resource ID.')
 param existingDocumentsPrivateDnsZoneResourceId string = ''
 
@@ -964,6 +967,86 @@ module procFuncStorage 'br/public:avm/res/storage/storage-account:0.25.0' = {
     minimumTlsVersion: 'TLS1_2'  // Enforcing TLS 1.2 for better security
     location: location
     tags: tags
+  }
+}
+
+module storageBlobPeReuse './modules/network/private-endpoint.bicep' = if (_networkIsolation && _vnetReuse && !empty(_azureReuseConfig.existingBlobPrivateDnsZoneResourceId)) {
+  name: '${storageAccountName}-blob-pe-reuse'
+  params: {
+    location: location
+    name: '${storageAccountName}-pep-blob'
+    tags: tags
+    subnetId: vnet.outputs.aiSubId
+    serviceId: storage.outputs.id
+    groupIds: ['blob']
+    dnsZoneId: _azureReuseConfig.existingBlobPrivateDnsZoneResourceId
+  }
+}
+
+var storagePrivateEndpointSubnetId = resourceId(subscription().subscriptionId, _azureReuseConfig.existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', _azureReuseConfig.existingVnetName, storagePrivateEndpointSubnetName)
+
+module storageQueuePeReuse './modules/network/private-endpoint.bicep' = if (_networkIsolation && _vnetReuse && !empty(storagePrivateEndpointSubnetName) && !empty(_azureReuseConfig.existingQueuePrivateDnsZoneResourceId)) {
+  name: '${storageAccountName}-queue-pe-reuse'
+  params: {
+    location: location
+    name: '${storageAccountName}-pep-queue'
+    tags: tags
+    subnetId: storagePrivateEndpointSubnetId
+    serviceId: storage.outputs.id
+    groupIds: ['queue']
+    dnsZoneId: _azureReuseConfig.existingQueuePrivateDnsZoneResourceId
+  }
+}
+
+module storageTablePeReuse './modules/network/private-endpoint.bicep' = if (_networkIsolation && _vnetReuse && !empty(storagePrivateEndpointSubnetName) && !empty(_azureReuseConfig.existingTablePrivateDnsZoneResourceId)) {
+  name: '${storageAccountName}-table-pe-reuse'
+  params: {
+    location: location
+    name: '${storageAccountName}-pep-table'
+    tags: tags
+    subnetId: storagePrivateEndpointSubnetId
+    serviceId: storage.outputs.id
+    groupIds: ['table']
+    dnsZoneId: _azureReuseConfig.existingTablePrivateDnsZoneResourceId
+  }
+}
+
+module funcStorageBlobPeReuse './modules/network/private-endpoint.bicep' = if (_networkIsolation && _vnetReuse && !empty(_azureReuseConfig.existingBlobPrivateDnsZoneResourceId)) {
+  name: '${funcStorageName}-blob-pe-reuse'
+  params: {
+    location: location
+    name: '${funcStorageName}-pep-blob'
+    tags: tags
+    subnetId: vnet.outputs.aiSubId
+    serviceId: procFuncStorage.outputs.resourceId
+    groupIds: ['blob']
+    dnsZoneId: _azureReuseConfig.existingBlobPrivateDnsZoneResourceId
+  }
+}
+
+module funcStorageQueuePeReuse './modules/network/private-endpoint.bicep' = if (_networkIsolation && _vnetReuse && !empty(storagePrivateEndpointSubnetName) && !empty(_azureReuseConfig.existingQueuePrivateDnsZoneResourceId)) {
+  name: '${funcStorageName}-queue-pe-reuse'
+  params: {
+    location: location
+    name: '${funcStorageName}-pep-queue'
+    tags: tags
+    subnetId: storagePrivateEndpointSubnetId
+    serviceId: procFuncStorage.outputs.resourceId
+    groupIds: ['queue']
+    dnsZoneId: _azureReuseConfig.existingQueuePrivateDnsZoneResourceId
+  }
+}
+
+module funcStorageTablePeReuse './modules/network/private-endpoint.bicep' = if (_networkIsolation && _vnetReuse && !empty(storagePrivateEndpointSubnetName) && !empty(_azureReuseConfig.existingTablePrivateDnsZoneResourceId)) {
+  name: '${funcStorageName}-table-pe-reuse'
+  params: {
+    location: location
+    name: '${funcStorageName}-pep-table'
+    tags: tags
+    subnetId: storagePrivateEndpointSubnetId
+    serviceId: procFuncStorage.outputs.resourceId
+    groupIds: ['table']
+    dnsZoneId: _azureReuseConfig.existingTablePrivateDnsZoneResourceId
   }
 }
 
