@@ -19,7 +19,7 @@ FINAL_OUTPUT_CONTAINER = config.get_value("FINAL_OUTPUT_CONTAINER")
 app = df.DFApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 
-# Shared handler for blob triggers (used by both EventGrid and polling triggers)
+# Shared handler for blob triggers.
 async def _handle_blob_trigger(
     blob: func.InputStream,
     client: df.DurableOrchestrationClient,
@@ -40,13 +40,12 @@ async def _handle_blob_trigger(
     logging.info(f"Started orchestration {instance_id} for blob {blob.name}")
 
 
-# Production: EventGrid-based blob trigger
+# Production: polling-based blob trigger
 @app.function_name(name="start_orchestrator_on_blob")
 @app.blob_trigger(
     arg_name="blob",
     path="bronze/{name}",
     connection="DataStorage",
-    source="EventGrid",
 )
 @app.durable_client_input(client_name="client")
 async def start_orchestrator_blob(
