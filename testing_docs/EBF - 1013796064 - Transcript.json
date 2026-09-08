@@ -1,0 +1,373 @@
+{
+  "student_name": "",
+  "student_first_name": "",
+  "student_last_name": "",
+  "document_issue_date": "2025-12-23",
+  "source_languages": [
+    "French"
+  ],
+  "document_type": "report",
+  "is_academic_record": true,
+  "courses": [
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "Arabic (LVA)",
+      "course_code": null,
+      "grade": "19,33",
+      "notes": "Class average: 19,43; Min: 18,17; Max: 20,00; Appreciation: Excellent work. Continue like this."
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "English (LVB)",
+      "course_code": null,
+      "grade": "19,33",
+      "notes": "Class average: 18,74; Min: 14,67; Max: 20,00; Appreciation: A very good trimester. Work is serious."
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "Philosophy",
+      "course_code": null,
+      "grade": "11,57",
+      "notes": "Class average: 11,99; Min: 8,86; Max: 15,03; Appreciation: A satisfactory trimester. Serious student, diligent in work, eager to progress. Yahia shows relevance orally but needs to be more active. You can do better by prioritizing rigor in written analysis. You are progressing. Continue!"
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "History-Geography",
+      "course_code": null,
+      "grade": "13,70",
+      "notes": "Class average: 12,30; Min: 5,90; Max: 15,70; Appreciation: Some absences. Nevertheless, results globally show a satisfactory level. Methods are all mastered, learning is verified, an audio capsule was successful. Oral interventions show accuracy of understanding. You can reach a higher level by focusing your efforts on rigor and strengthening your performance."
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "Scientific Education",
+      "course_code": null,
+      "grade": "15,50",
+      "notes": "Class average: 14,82; Min: 12,50; Max: 18,00; Appreciation: Good overall, solid. However, room for improvement remains."
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "Specialized Mathematics",
+      "course_code": null,
+      "grade": "13,89",
+      "notes": "Class average: 13,01; Min: 7,65; Max: 18,10; Appreciation: Satisfactory overall. Serious and motivated student!"
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "Specialized Physics-Chemistry",
+      "course_code": null,
+      "grade": "10,60",
+      "notes": "Class average: 12,49; Min: 9,02; Max: 18,22; Appreciation: Still somewhat fragile overall. Yahia will progress by filling the few gaps from previous years. Work is serious but could be deepened."
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "Physical Education and Sports (EPS)",
+      "course_code": null,
+      "grade": "15,00",
+      "notes": "Class average: 16,71; Min: 12,00; Max: 20,00; Appreciation: Very satisfactory result. Very serious, motivated student, relevant in remarks!"
+    },
+    {
+      "institution": "LYCÉE LYAUTEY",
+      "year_or_session": "2025/2026 - 1st Trimester",
+      "course_level": "T15",
+      "course_name": "Advanced Mathematics (Option)",
+      "course_code": null,
+      "grade": "12,40",
+      "notes": "Class average: 15,68; Min: 10,60; Max: 20,00; Appreciation: Satisfactory overall. Invest more in class."
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "French Written",
+      "course_code": null,
+      "grade": "15,00",
+      "notes": "Epreuve terminale anticipée de Français"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "French Oral",
+      "course_code": null,
+      "grade": "18,00",
+      "notes": "Epreuve terminale anticipée de Français"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "History - Geography",
+      "course_code": null,
+      "grade": "16,20",
+      "notes": "Contrôle continu 1ère (Livret)"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "Moral and Civic Education",
+      "course_code": null,
+      "grade": "19,20",
+      "notes": "Contrôle continu 1ère (Livret)"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "Arabic (Language A)",
+      "course_code": null,
+      "grade": "19,10",
+      "notes": "Contrôle continu 1ère (Livret)"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "English (Language B)",
+      "course_code": null,
+      "grade": "13,90",
+      "notes": "Contrôle continu 1ère (Livret)"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "Scientific Education",
+      "course_code": null,
+      "grade": "17,20",
+      "notes": "Contrôle continu 1ère (Livret)"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "Economics and Social Sciences",
+      "course_code": null,
+      "grade": "13,90",
+      "notes": "Contrôle continu 1ère (Livret)"
+    },
+    {
+      "institution": "LYCEE LYAUTEY",
+      "year_or_session": "2024 - 2025 - 1ère année",
+      "course_level": "1ère",
+      "course_name": "Spanish (Optional Course)",
+      "course_code": null,
+      "grade": "17,00",
+      "notes": "Enseignement(s) facultatif(s) 1ère"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "French",
+      "course_code": null,
+      "grade": "14,00",
+      "notes": "S2 average; S1: 15,58; class average: 15,00"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "English LVB",
+      "course_code": null,
+      "grade": "14,64",
+      "notes": "S2 average; S1: 13,10; class average: 16,73"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Arabic LVA",
+      "course_code": null,
+      "grade": "19,00",
+      "notes": "S2 average; S1: 19,17; class average: 19,06"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Spanish LVC",
+      "course_code": null,
+      "grade": "16,08",
+      "notes": "S2 average; S1: 17,90; class average: 11,06"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Education Morale et Civique",
+      "course_code": null,
+      "grade": "20,00",
+      "notes": "S2 average; S1: 18,40; class average: 20,00"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Scientific Education",
+      "course_code": null,
+      "grade": "17,10",
+      "notes": "S2 average; S1: 17,15; class average: 16,20"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "History-Geography",
+      "course_code": null,
+      "grade": "16,67",
+      "notes": "S2 average; S1: 15,73; class average: 16,45"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Specialized PC",
+      "course_code": null,
+      "grade": "14,97",
+      "notes": "S2 average; S1: 15,64; class average: 13,87"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Specialized SES",
+      "course_code": null,
+      "grade": "16,23",
+      "notes": "S2 average; S1: 11,42; class average: 14,40"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Specialized Maths",
+      "course_code": null,
+      "grade": "17,29",
+      "notes": "S2 average; S1: 14,00; class average: 14,91"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 2nd Semester",
+      "course_level": null,
+      "course_name": "Physical Education and Sports",
+      "course_code": null,
+      "grade": "10,75",
+      "notes": "S2 average; S1: 10,00; class average: 13,39"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "French",
+      "course_code": null,
+      "grade": "15,58",
+      "notes": "Class average: 15,47; +: 18,47; -: 11,56"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "English LVB",
+      "course_code": null,
+      "grade": "13,10",
+      "notes": "Class average: 15,47; +: 18,40; -: 10,30"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Arabic LVA",
+      "course_code": null,
+      "grade": "19,17",
+      "notes": "Class average: 18,86; +: 20,00; -: 15,00"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Spanish LVC",
+      "course_code": null,
+      "grade": "17,90",
+      "notes": "Class average: 16,43; +: 19,80; -: 7,63"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Moral and Civic Education",
+      "course_code": null,
+      "grade": "18,40",
+      "notes": "Class average: 16,15; +: 19,20; -: 16,80"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Scientific Education",
+      "course_code": null,
+      "grade": "17,15",
+      "notes": "Class average: 15,94; +: 18,87; -: 10,48"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "History-Geography",
+      "course_code": null,
+      "grade": "15,73",
+      "notes": "Class average: 15,93; +: 19,02; -: 11,03"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Specialized Computer Science",
+      "course_code": null,
+      "grade": "15,64",
+      "notes": "Class average: 12,12; +: 17,88; -: 7,25"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Specialized Economics and Social Sciences",
+      "course_code": null,
+      "grade": "11,42",
+      "notes": "Class average: 12,11; +: 17,54; -: 12,11"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Specialized Mathematics",
+      "course_code": null,
+      "grade": "14,00",
+      "notes": "Class average: 14,17; +: 18,13; -: 8,57"
+    },
+    {
+      "institution": "Lycée Lyautey",
+      "year_or_session": "2024/2025 - 1st Semester",
+      "course_level": null,
+      "course_name": "Physical Education and Sports",
+      "course_code": null,
+      "grade": "10,00",
+      "notes": "Class average: 12,54; +: 18,00; -: 10,00"
+    }
+  ]
+}

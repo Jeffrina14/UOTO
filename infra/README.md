@@ -165,7 +165,7 @@ az deployment sub create \
 | `AZURE_DEPLOY_VM` | `false` | Deploy jump box VM for network isolation |
 | `AZURE_DEPLOY_VPN` | `false` | Deploy VPN gateway |
 | `AI_VISION_ENABLED` | `false` | Enable AI Vision services |
-| `AOAI_MULTI_MODAL` | `false` | Enable multi-modal AI capabilities |
+| `AOAI_MULTI_MODAL` | `true` | Enable multi-modal AI capabilities |
 | `FUNCTION_APP_HOST_PLAN` | `FlexConsumption` | Function app hosting plan (`FlexConsumption` or `Dedicated`) |
 | `FUNCTION_APP_SKU` | `FC1` | Function app SKU |
 | `VM_USER_PASSWORD` | - | Password for VM (required if `AZURE_DEPLOY_VM=true`) |
