@@ -1,4 +1,4 @@
-import json
+import os
 import logging
 
 import azure.functions as func
@@ -10,7 +10,6 @@ from activities import runDocIntel, callAiFoundry, writeToBlob, speechToText, ca
 from configuration import Configuration
 
 from pipelineUtils.blob_functions import BlobMetadata
-from pipelineUtils.transcript_parser import parse_transcript_response
 
 config = Configuration()
 
@@ -20,6 +19,7 @@ FINAL_OUTPUT_CONTAINER = config.get_value("FINAL_OUTPUT_CONTAINER")
 app = df.DFApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 
+# Shared handler for blob triggers (used by both EventGrid and polling triggers)
 async def _handle_blob_trigger(
     blob: func.InputStream,
     client: df.DurableOrchestrationClient,
@@ -40,11 +40,13 @@ async def _handle_blob_trigger(
     logging.info(f"Started orchestration {instance_id} for blob {blob.name}")
 
 
+# Production: EventGrid-based blob trigger
 @app.function_name(name="start_orchestrator_on_blob")
 @app.blob_trigger(
     arg_name="blob",
     path="bronze/{name}",
     connection="DataStorage",
+    source="EventGrid",
 )
 @app.durable_client_input(client_name="client")
 async def start_orchestrator_blob(
@@ -52,6 +54,23 @@ async def start_orchestrator_blob(
     client: df.DurableOrchestrationClient,
 ):
     await _handle_blob_trigger(blob, client)
+
+
+# Local development: Polling-based blob trigger (only registered in Development environment)
+if os.getenv("AZURE_FUNCTIONS_ENVIRONMENT") == "Development":
+    @app.function_name(name="start_orchestrator_on_blob_local")
+    @app.blob_trigger(
+        arg_name="blob",
+        path="bronze/{name}",
+        connection="DataStorage",
+        # No source="EventGrid" — uses polling instead
+    )
+    @app.durable_client_input(client_name="client")
+    async def start_orchestrator_blob_local(
+        blob: func.InputStream,
+        client: df.DurableOrchestrationClient,
+    ):
+        await _handle_blob_trigger(blob, client)
 
 
 # An HTTP-triggered function with a Durable Functions client binding
@@ -98,14 +117,9 @@ async def start_orchestrator_http(req: func.HttpRequest, client):
 def process_blob(context):
     blob_input = context.get_input()
     sub_orchestration_id = context.instance_id 
+    logging.info(f"Process Blob sub Orchestration - Processing blob_metadata: {blob_input} with sub orchestration id: {sub_orchestration_id}")
     # Get file extensions
     blob_name = blob_input.get("name", "")
-    source_filename = blob_name.rsplit("/", 1)[-1]
-    output_filename = f"{source_filename.rsplit('.', 1)[0]}-output.json"
-    logging.info(
-        f"Processing source filename={source_filename} "
-        f"instance_id={sub_orchestration_id}"
-    )
     file_extension = blob_name.lower().split('.')[-1] if '.' in blob_name else ""
     # Audio file extensions
     audio_extensions = ['wav', 'mp3', 'opus', 'ogg', 'flac', 'wma', 'aac', 'webm']
@@ -121,12 +135,7 @@ def process_blob(context):
     )
 
     # 1. Process Data Source based on file type
-    multimodal_enabled = config.get_value("AOAI_MULTI_MODAL", "false").lower() == "true"
-    if multimodal_enabled and file_extension in document_extensions:
-        logging.info(
-            f"Selected processing path=multimodal source filename={source_filename} "
-            f"instance_id={sub_orchestration_id}"
-        )
+    if config.get_value("AOAI_MULTI_MODAL", "false").lower() == "true" and file_extension in document_extensions:
         aoai_input = {
             "name": blob_input.get("name"),
             "container": blob_input.get("container"),
@@ -134,11 +143,7 @@ def process_blob(context):
             "instance_id": sub_orchestration_id
         }
 
-        raw_multimodal_result = yield context.call_activity_with_retry(
-            "callAoaiMultiModal", retry_options, aoai_input
-        )
-        validated_multimodal_result = parse_transcript_response(raw_multimodal_result)
-        final_result = json.dumps(validated_multimodal_result, ensure_ascii=False)
+        text_result = yield context.call_activity_with_retry("callAoaiMultiModal", retry_options, aoai_input)
 
 
     elif config.get_value("AI_VISION_ENABLED", "false").lower() == "true":
@@ -146,18 +151,12 @@ def process_blob(context):
 
     elif file_extension in audio_extensions:
         # Process audio with speech-to-text
-        logging.info(
-            f"Selected processing path=audio source filename={source_filename} "
-            f"instance_id={sub_orchestration_id}"
-        )
+        logging.info(f"Processing audio file: {blob_name}")
         text_result = yield context.call_activity_with_retry("speechToText", retry_options, blob_input)
 
     elif file_extension in document_extensions:
         # Process document with Document Intelligence
-        logging.info(
-            f"Selected processing path=document-intelligence source filename={source_filename} "
-            f"instance_id={sub_orchestration_id}"
-        )
+        logging.info(f"Processing document file: {blob_name}")
         text_result = yield context.call_activity_with_retry("runDocIntel", retry_options, blob_input)
         
     else:
@@ -169,31 +168,29 @@ def process_blob(context):
             "status": "skipped"
         }
     
-    if not (multimodal_enabled and file_extension in document_extensions):
-        # Feed non-multimodal output into AOAI to get insights.
-        call_aoai_input = {
-            "text_result": text_result,
-            "instance_id": sub_orchestration_id
-        }
-        final_result = yield context.call_activity_with_retry("callAoai", retry_options, call_aoai_input)
+    # 2. Feed Output into AOAI to get insights
+    # Package the data into a dictionary
+    call_aoai_input = {
+        "text_result": text_result,
+        "instance_id": sub_orchestration_id 
+    }
+
+    aoai_output = yield context.call_activity_with_retry("callAoai", retry_options, call_aoai_input)
     
 
-    logging.info(
-        f"Writing output filename={output_filename} source filename={source_filename} "
-        f"instance_id={sub_orchestration_id}"
-    )
+    # 3. Write AOAI output to Blob Storage
     task_result = yield context.call_activity_with_retry(
         "writeToBlob", 
         retry_options,
         {
-            "json_str": final_result,
+            "json_str": aoai_output, 
             "blob_name": blob_input["name"],
             "final_output_container": FINAL_OUTPUT_CONTAINER
         }
     )
     return {
         "blob": blob_input,
-        "text_result": final_result,
+        "text_result": aoai_output,
         "task_result": task_result
     }   
 

@@ -21,4 +21,8 @@ azd env get-values | ForEach-Object {
 # Upload initial prompt file
 az storage blob upload --account-name $env:AZURE_STORAGE_ACCOUNT --container-name "prompts" --name prompts.yaml --file ./data/prompts.yaml --auth-mode login
 
-Write-Host "Post-provision complete."
+# Note: EventGrid subscription is created in postdeploy hook (scripts/postdeploy.ps1)
+# This is because the function code must be deployed first for the webhook validation to succeed.
+# See: https://github.com/Azure-Samples/functions-e2e-blob-pdf-to-text for the official pattern.
+
+Write-Host "Post-provision complete. EventGrid subscription will be created after code deployment."

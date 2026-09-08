@@ -1,6 +1,6 @@
 # AI Document Processor (ADP) - Official Deployment Guide
 
-> **Last Updated:** September 2026
+> **Last Updated:** December 2024  
 > **Status:** Current and Official  
 > **Note:** This document supersedes previous troubleshooting guides and reflects the latest working implementation.
 
@@ -16,10 +16,11 @@
 6. [Infrastructure Details](#infrastructure-details)
 7. [Pipeline Activities](#pipeline-activities)
 8. [Configuration System](#configuration-system)
-9. [Multi-Modal & Audio Support](#multi-modal--audio-support)
-10. [Local Development](#local-development)
-11. [Troubleshooting](#troubleshooting)
-12. [Recent Changes & Improvements](#recent-changes--improvements)
+9. [Event Grid Integration](#event-grid-integration)
+10. [Multi-Modal & Audio Support](#multi-modal--audio-support)
+11. [Local Development](#local-development)
+12. [Troubleshooting](#troubleshooting)
+13. [Recent Changes & Improvements](#recent-changes--improvements)
 
 ---
 
@@ -56,6 +57,7 @@ The AI Document Processor (ADP) is an Azure-based accelerator that automates doc
 | **Azure Key Vault** | Secrets management |
 | **Azure Cosmos DB** | Conversation history and prompt storage |
 | **Application Insights** | Monitoring and logging |
+| **Event Grid System Topic** | Blob trigger events for document processing |
 
 ### Network Isolation (Optional)
 
@@ -92,9 +94,9 @@ pipeline/
 
 ### Trigger Types
 
-1. **Blob Trigger** (`start_orchestrator_on_blob`)
+1. **Blob Trigger with EventGrid** (`start_orchestrator_on_blob`)
    - Triggers on new blobs in the `bronze` container
-   - Uses the Azure Functions storage polling trigger
+   - Uses EventGrid source for reliable, scalable triggers
    
 2. **HTTP Trigger** (`start_orchestrator_http`)
    - Manual invocation via HTTP POST
@@ -180,6 +182,7 @@ All parameters can be set via `azd env set <VAR> <VALUE>` before running `azd up
 
 The `azd up` command runs hooks automatically:
 1. **postprovision** - Initial resource configuration
+2. **postdeploy** - Creates EventGrid subscription for blob triggers
 
 ---
 
@@ -324,6 +327,35 @@ openai_model = config.get_value("OPENAI_MODEL")
 
 ---
 
+## Event Grid Integration
+
+### Architecture
+
+The solution uses a **System Topic** pattern for EventGrid, which is more reliable than direct storage event subscriptions:
+
+1. **Bicep creates** the System Topic on the storage account
+2. **postDeploy script** creates the Event Subscription after function deployment
+3. **Webhook endpoint** uses the `blobs_extension` system key
+
+### Why System Topic Pattern?
+
+- Pre-created topic ensures reliable event routing
+- Better webhook validation timeout handling
+- Follows Microsoft's official quickstart pattern
+
+### Event Subscription Details
+
+```
+Endpoint: https://{functionAppName}.azurewebsites.net/runtime/webhooks/blobs
+  ?functionName=Host.Functions.start_orchestrator_on_blob
+  &code={blobs_extension_key}
+
+Filter: /blobServices/default/containers/bronze/
+Events: Microsoft.Storage.BlobCreated
+```
+
+---
+
 ## Multi-Modal & Audio Support
 
 ### Multi-Modal Processing
@@ -387,6 +419,30 @@ Use `test_client.ipynb` to test the HTTP trigger endpoint locally or against dep
 
 ## Troubleshooting
 
+#### EventGrid Subscription Creation Fails
+
+**Symptom:** postDeploy script fails to create subscription
+
+**Solutions:**
+1. Wait 2-3 minutes after deployment for function to initialize
+2. Re-run: `./scripts/postDeploy.ps1`
+3. Check function app is running: Azure Portal > Function App > Functions
+
+#### Function Cold Start Timeout
+
+**Symptom:** Webhook validation timeout during EventGrid subscription
+
+**Solution:** The postDeploy script includes warmup requests. If still failing, increase warmup iterations or use Dedicated hosting plan.
+
+#### Missing blobs_extension Key
+
+**Symptom:** Cannot retrieve system key from function app
+
+**Solutions:**
+1. Ensure function code is deployed (`azd deploy`)
+2. Verify blob trigger function exists in portal
+3. Check function app logs for initialization errors
+
 #### Authentication Errors
 
 **Symptom:** 401/403 errors accessing Azure services
@@ -405,6 +461,11 @@ az functionapp show -n $functionAppName -g $resourceGroup --query state
 # List functions
 az functionapp function list -n $functionAppName -g $resourceGroup
 
+# View system keys
+az functionapp keys list -n $functionAppName -g $resourceGroup
+
+# Check Event Grid subscription
+az eventgrid system-topic event-subscription list -g $resourceGroup --system-topic-name $topicName
 ```
 
 ---
@@ -544,7 +605,12 @@ azd env set AZURE_VM_SIZE "$VM_SKU"
    - Disabled shared key access (`allowSharedKeyAccess: false`)
    - Managed identity authentication only
 
-3. **Hosting Plan Flexibility**
+3. **Event Grid System Topic**
+   - System topic created in Bicep for reliability
+   - Event subscription created in postDeploy script
+   - Outputs `BRONZE_SYSTEM_TOPIC_NAME` for script consumption
+
+4. **Hosting Plan Flexibility**
    - Supports both `Dedicated` and `FlexConsumption`
    - Automatic app settings based on plan type
    - SKU validation by plan type
@@ -565,12 +631,17 @@ azd env set AZURE_VM_SIZE "$VM_SKU"
    - Environment-aware credential selection
 
 4. **Improved Blob Trigger**
-   - Uses the Azure Functions storage polling trigger
+   - Uses EventGrid source for reliable triggering
    - Structured `BlobMetadata` class for consistent data passing
 
 ### Scripts
 
-1. **getRemoteSettings.ps1/sh**
+1. **postDeploy.ps1/sh**
+   - Creates EventGrid subscription after function deployment
+   - Includes function warmup to prevent webhook timeout
+   - Idempotent - checks for existing subscription
+
+2. **getRemoteSettings.ps1/sh**
    - Downloads function app settings for local development
    - Automatically formats for `local.settings.json`
 
@@ -580,8 +651,9 @@ azd env set AZURE_VM_SIZE "$VM_SKU"
 
 - [Azure Durable Functions Documentation](https://docs.microsoft.com/en-us/azure/azure-functions/durable/)
 - [Azure AI Foundry Documentation](https://learn.microsoft.com/en-us/azure/ai-studio/)
+- [Event Grid Blob Storage Events](https://docs.microsoft.com/en-us/azure/event-grid/event-schema-blob-storage)
 - [Azure Verified Modules (AVM)](https://aka.ms/avm)
 
 ---
 
-*This document was generated based on the current state of the ADPF solution as of September 2026.*
+*This document was generated based on the current state of the ADPF solution as of December 2024.*

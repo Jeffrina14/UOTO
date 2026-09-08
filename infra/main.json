@@ -5,8 +5,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.46.1.21595",
-      "templateHash": "9825377194881236826"
+      "version": "0.38.33.27573",
+      "templateHash": "136215177288524427"
     }
   },
   "definitions": {
@@ -126,7 +126,7 @@
     },
     "multiModal": {
       "type": "bool",
-      "defaultValue": true,
+      "defaultValue": false,
       "allowedValues": [
         false,
         true
@@ -207,17 +207,6 @@
         "description": "Install Microsoft AntiMalware extension on the test VM. Disable in network-isolated environments without outbound internet access. Override via AZURE_VM_ANTIMALWARE env var."
       }
     },
-    "vmCustomScriptBootstrap": {
-      "type": "bool",
-      "defaultValue": true,
-      "allowedValues": [
-        false,
-        true
-      ],
-      "metadata": {
-        "description": "Run VM CustomScriptExtension bootstrap from GitHub. Disable in network-isolated environments without outbound internet access. Override via AZURE_VM_CUSTOM_SCRIPT_BOOTSTRAP env var."
-      }
-    },
     "vnetName": {
       "type": "string",
       "defaultValue": "",
@@ -274,13 +263,6 @@
         "description": "Existing or new database/private endpoint subnet name used for Cosmos DB."
       }
     },
-    "storagePrivateEndpointSubnetName": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Existing subnet name used for storage Queue and Table private endpoints when reusing a VNet."
-      }
-    },
     "existingDocumentsPrivateDnsZoneResourceId": {
       "type": "string",
       "defaultValue": "",
@@ -321,13 +303,6 @@
       "defaultValue": "",
       "metadata": {
         "description": "Existing Blob private DNS zone resource ID."
-      }
-    },
-    "existingWebsitesPrivateDnsZoneResourceId": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Existing App Service private DNS zone resource ID."
       }
     },
     "skipRoleAssignmentIds": {
@@ -506,6 +481,10 @@
         "dataLakeAnalyticsAccount": "dla",
         "eventHubsNamespace": "evhns-",
         "eventHub": "evh-",
+        "eventGridDomain": "evgd-",
+        "eventGridSubscriptions": "evgs-",
+        "eventGridTopic": "evgt-",
+        "eventGridSystemTopic": "egst-",
         "hdInsightHadoopCluster": "hadoop-",
         "hdInsightHBaseCluster": "hbase-",
         "hdInsightKafkaCluster": "kafka-",
@@ -945,6 +924,10 @@
         "azureServiceBusDataReceiver": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
         "azureServiceBusDataSender": "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39",
         "bizTalkContributor": "5e3c6656-6cfa-4708-81fe-0de47ac73342",
+        "eventGridContributor": "1e241071-0855-49ea-94dc-649edcd759de",
+        "eventGridDataSender": "d5a91429-5739-47e2-a06b-3470a27159e7",
+        "eventGridEventSubscriptionContributor": "428e0ff0-5e57-4d9c-a221-2c70d0e0a443",
+        "eventGridEventSubscriptionReader": "2414bbcf-6497-4faf-8c65-045460748405",
         "fhirDataContributor": "5a1fc7df-4bf1-4951-a576-89034ee01acd",
         "fhirDataExporter": "3db33094-8700-4567-8da5-1501d4e7e843",
         "fhirDataImporter": "4465e953-8ced-4406-a58e-0f6e3f3b530b",
@@ -1111,10 +1094,9 @@
     "_azureKeyvaultPe": "[if(not(empty(parameters('azureKeyvaultPe'))), parameters('azureKeyvaultPe'), format('{0}{1}{2}', variables('abbrs').security.keyVault, variables('abbrs').networking.privateEndpoint, variables('suffix')))]",
     "logAnalyticsPEName": "[format('{0}{1}{2}', variables('abbrs').managementGovernance.logAnalyticsWorkspace, variables('abbrs').security.privateEndpoint, variables('suffix'))]",
     "aiFoundryBaseName": "[substring(variables('suffix'), 0, 12)]",
-    "_hasAllAiFoundryDnsZonesInReuse": "[and(and(not(empty(variables('_azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId)), not(empty(variables('_azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId))), not(empty(variables('_azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId)))]",
     "appConfigurationManagedIdentityName": "[format('{0}{1}{2}', variables('abbrs').security.managedIdentity, variables('abbrs').configuration.appConfiguration, variables('suffix'))]",
-    "storagePrivateEndpointSubnetId": "[resourceId(subscription().subscriptionId, variables('_azureReuseConfig').existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', variables('_azureReuseConfig').existingVnetName, parameters('storagePrivateEndpointSubnetName'))]",
     "dedicatedAppSettings": "[if(not(equals(parameters('functionAppHostPlan'), 'FlexConsumption')), createObject('FUNCTIONS_WORKER_RUNTIME', variables('functionRuntime'), 'AzureWebJobsFeatureFlags', 'EnableWorkerIndexing', 'ENABLE_ORYX_BUILD', 'true', 'SCM_DO_BUILD_DURING_DEPLOYMENT', 'true'), createObject())]",
+    "bronzeSystemTopicName": "[format('bronze-storage-topic-{0}', variables('suffix'))]",
     "_fileUris": [
       "https://raw.githubusercontent.com/Azure/ai-document-processor/refs/heads/main/infra/install.ps1"
     ],
@@ -1162,7 +1144,6 @@
       "existingAiServicesPrivateDnsZoneResourceId": "",
       "existingDocumentsPrivateDnsZoneResourceId": "",
       "existingBlobPrivateDnsZoneResourceId": "",
-      "existingWebsitesPrivateDnsZoneResourceId": "",
       "existingQueuePrivateDnsZoneResourceId": "",
       "existingTablePrivateDnsZoneResourceId": "",
       "existingFilePrivateDnsZoneResourceId": "",
@@ -1183,7 +1164,7 @@
       "existingDataIngestionFunctionAppStorageName": "",
       "existingDataIngestionFunctionAppStorageResourceGroupName": ""
     },
-    "_azureReuseConfig": "[union(variables('_azureReuseConfigDefaults'), createObject('aoaiReuse', if(empty(parameters('azureReuseConfig').aoaiReuse), variables('_azureReuseConfigDefaults').aoaiReuse, equals(toLower(parameters('azureReuseConfig').aoaiReuse), 'true')), 'existingAoaiResourceGroupName', if(empty(parameters('azureReuseConfig').existingAoaiResourceGroupName), variables('_azureReuseConfigDefaults').existingAoaiResourceGroupName, parameters('azureReuseConfig').existingAoaiResourceGroupName), 'existingAoaiName', if(empty(parameters('azureReuseConfig').existingAoaiName), variables('_azureReuseConfigDefaults').existingAoaiName, parameters('azureReuseConfig').existingAoaiName), 'aiServicesReuse', if(empty(parameters('azureReuseConfig').aiServicesReuse), variables('_azureReuseConfigDefaults').aiServicesReuse, equals(toLower(parameters('azureReuseConfig').aiServicesReuse), 'true')), 'existingAiServicesResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiServicesResourceGroupName), variables('_azureReuseConfigDefaults').existingAiServicesResourceGroupName, parameters('azureReuseConfig').existingAiServicesResourceGroupName), 'existingAiServicesName', if(empty(parameters('azureReuseConfig').existingAiServicesName), variables('_azureReuseConfigDefaults').existingAiServicesName, parameters('azureReuseConfig').existingAiServicesName), 'appConfigReuse', false(), 'existingAppConfigResourceGroupName', '', 'existingAppConfigName', '', 'appInsightsReuse', if(empty(parameters('azureReuseConfig').appInsightsReuse), variables('_azureReuseConfigDefaults').appInsightsReuse, equals(toLower(parameters('azureReuseConfig').appInsightsReuse), 'true')), 'existingAppInsightsResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppInsightsResourceGroupName), variables('_azureReuseConfigDefaults').existingAppInsightsResourceGroupName, parameters('azureReuseConfig').existingAppInsightsResourceGroupName), 'existingAppInsightsName', if(empty(parameters('azureReuseConfig').existingAppInsightsName), variables('_azureReuseConfigDefaults').existingAppInsightsName, parameters('azureReuseConfig').existingAppInsightsName), 'logAnalyticsWorkspaceReuse', if(empty(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), variables('_azureReuseConfigDefaults').logAnalyticsWorkspaceReuse, equals(toLower(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), 'true')), 'existingLogAnalyticsWorkspaceResourceId', if(empty(parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), variables('_azureReuseConfigDefaults').existingLogAnalyticsWorkspaceResourceId, parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), 'appServicePlanReuse', if(empty(parameters('azureReuseConfig').appServicePlanReuse), variables('_azureReuseConfigDefaults').appServicePlanReuse, equals(toLower(parameters('azureReuseConfig').appServicePlanReuse), 'true')), 'existingAppServicePlanResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServicePlanResourceGroupName, parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), 'existingAppServicePlanName', if(empty(parameters('azureReuseConfig').existingAppServicePlanName), variables('_azureReuseConfigDefaults').existingAppServicePlanName, parameters('azureReuseConfig').existingAppServicePlanName), 'aiSearchReuse', if(empty(parameters('azureReuseConfig').aiSearchReuse), variables('_azureReuseConfigDefaults').aiSearchReuse, equals(toLower(parameters('azureReuseConfig').aiSearchReuse), 'true')), 'existingAiSearchResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiSearchResourceGroupName), variables('_azureReuseConfigDefaults').existingAiSearchResourceGroupName, parameters('azureReuseConfig').existingAiSearchResourceGroupName), 'existingAiSearchName', if(empty(parameters('azureReuseConfig').existingAiSearchName), variables('_azureReuseConfigDefaults').existingAiSearchName, parameters('azureReuseConfig').existingAiSearchName), 'cosmosDbReuse', if(empty(parameters('azureReuseConfig').cosmosDbReuse), variables('_azureReuseConfigDefaults').cosmosDbReuse, equals(toLower(parameters('azureReuseConfig').cosmosDbReuse), 'true')), 'existingCosmosDbResourceGroupName', if(empty(parameters('azureReuseConfig').existingCosmosDbResourceGroupName), variables('_azureReuseConfigDefaults').existingCosmosDbResourceGroupName, parameters('azureReuseConfig').existingCosmosDbResourceGroupName), 'existingCosmosDbAccountName', if(empty(parameters('azureReuseConfig').existingCosmosDbAccountName), variables('_azureReuseConfigDefaults').existingCosmosDbAccountName, parameters('azureReuseConfig').existingCosmosDbAccountName), 'existingCosmosDbDatabaseName', if(empty(parameters('azureReuseConfig').existingCosmosDbDatabaseName), variables('_azureReuseConfigDefaults').existingCosmosDbDatabaseName, parameters('azureReuseConfig').existingCosmosDbDatabaseName), 'keyVaultReuse', if(empty(parameters('azureReuseConfig').keyVaultReuse), variables('_azureReuseConfigDefaults').keyVaultReuse, equals(toLower(parameters('azureReuseConfig').keyVaultReuse), 'true')), 'existingKeyVaultResourceGroupName', if(empty(parameters('azureReuseConfig').existingKeyVaultResourceGroupName), variables('_azureReuseConfigDefaults').existingKeyVaultResourceGroupName, parameters('azureReuseConfig').existingKeyVaultResourceGroupName), 'existingKeyVaultName', if(empty(parameters('azureReuseConfig').existingKeyVaultName), variables('_azureReuseConfigDefaults').existingKeyVaultName, parameters('azureReuseConfig').existingKeyVaultName), 'storageReuse', if(empty(parameters('azureReuseConfig').storageReuse), variables('_azureReuseConfigDefaults').storageReuse, equals(toLower(parameters('azureReuseConfig').storageReuse), 'true')), 'existingStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingStorageResourceGroupName, parameters('azureReuseConfig').existingStorageResourceGroupName), 'existingStorageName', if(empty(parameters('azureReuseConfig').existingStorageName), variables('_azureReuseConfigDefaults').existingStorageName, parameters('azureReuseConfig').existingStorageName), 'vnetReuse', if(contains(parameters('azureReuseConfig'), 'vnetReuse'), equals(toLower(parameters('azureReuseConfig').vnetReuse), 'true'), parameters('vnetReuse')), 'existingVnetResourceGroupName', if(contains(parameters('azureReuseConfig'), 'existingVnetResourceGroupName'), parameters('azureReuseConfig').existingVnetResourceGroupName, parameters('existingVnetResourceGroupName')), 'existingVnetName', if(contains(parameters('azureReuseConfig'), 'existingVnetName'), parameters('azureReuseConfig').existingVnetName, parameters('existingVnetName')), 'existingAutomationPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingAutomationPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingAutomationPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingAutomationPrivateDnsZoneResourceId), 'existingOdsPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingOdsPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingOdsPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingOdsPrivateDnsZoneResourceId), 'existingOmsPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingOmsPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingOmsPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingOmsPrivateDnsZoneResourceId), 'existingAzureMonitorPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingAzureMonitorPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId), 'existingKeyVaultPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingKeyVaultPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingKeyVaultPrivateDnsZoneResourceId, parameters('existingKeyVaultPrivateDnsZoneResourceId')), 'existingCognitiveServicesPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingCognitiveServicesPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId, parameters('existingCognitiveServicesPrivateDnsZoneResourceId')), 'existingOpenAiPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingOpenAiPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId, parameters('existingOpenAiPrivateDnsZoneResourceId')), 'existingAiServicesPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingAiServicesPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId, parameters('existingAiServicesPrivateDnsZoneResourceId')), 'existingDocumentsPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingDocumentsPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingDocumentsPrivateDnsZoneResourceId, parameters('existingDocumentsPrivateDnsZoneResourceId')), 'existingBlobPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingBlobPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingBlobPrivateDnsZoneResourceId, parameters('existingBlobPrivateDnsZoneResourceId')), 'existingWebsitesPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingWebsitesPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingWebsitesPrivateDnsZoneResourceId, parameters('existingWebsitesPrivateDnsZoneResourceId')), 'existingQueuePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingQueuePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingQueuePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingQueuePrivateDnsZoneResourceId), 'existingTablePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingTablePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingTablePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingTablePrivateDnsZoneResourceId), 'existingFilePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingFilePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingFilePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingFilePrivateDnsZoneResourceId), 'existingBastionHostResourceId', if(empty(parameters('azureReuseConfig').existingBastionHostResourceId), variables('_azureReuseConfigDefaults').existingBastionHostResourceId, parameters('azureReuseConfig').existingBastionHostResourceId), 'orchestratorFunctionAppReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppReuse), 'true')), 'existingOrchestratorFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), 'existingOrchestratorFunctionAppName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppName, parameters('azureReuseConfig').existingOrchestratorFunctionAppName), 'dataIngestionFunctionAppReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), 'true')), 'existingDataIngestionFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), 'existingDataIngestionFunctionAppName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppName, parameters('azureReuseConfig').existingDataIngestionFunctionAppName), 'appServiceReuse', if(empty(parameters('azureReuseConfig').appServiceReuse), variables('_azureReuseConfigDefaults').appServiceReuse, equals(toLower(parameters('azureReuseConfig').appServiceReuse), 'true')), 'existingAppServiceName', if(empty(parameters('azureReuseConfig').existingAppServiceName), variables('_azureReuseConfigDefaults').existingAppServiceName, parameters('azureReuseConfig').existingAppServiceName), 'existingAppServiceNameResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServiceNameResourceGroupName, parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), 'orchestratorFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), 'true')), 'existingOrchestratorFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), 'existingOrchestratorFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), 'dataIngestionFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), 'true')), 'existingDataIngestionFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), 'existingDataIngestionFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName)))]"
+    "_azureReuseConfig": "[union(variables('_azureReuseConfigDefaults'), createObject('aoaiReuse', if(empty(parameters('azureReuseConfig').aoaiReuse), variables('_azureReuseConfigDefaults').aoaiReuse, equals(toLower(parameters('azureReuseConfig').aoaiReuse), 'true')), 'existingAoaiResourceGroupName', if(empty(parameters('azureReuseConfig').existingAoaiResourceGroupName), variables('_azureReuseConfigDefaults').existingAoaiResourceGroupName, parameters('azureReuseConfig').existingAoaiResourceGroupName), 'existingAoaiName', if(empty(parameters('azureReuseConfig').existingAoaiName), variables('_azureReuseConfigDefaults').existingAoaiName, parameters('azureReuseConfig').existingAoaiName), 'aiServicesReuse', if(empty(parameters('azureReuseConfig').aiServicesReuse), variables('_azureReuseConfigDefaults').aiServicesReuse, equals(toLower(parameters('azureReuseConfig').aiServicesReuse), 'true')), 'existingAiServicesResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiServicesResourceGroupName), variables('_azureReuseConfigDefaults').existingAiServicesResourceGroupName, parameters('azureReuseConfig').existingAiServicesResourceGroupName), 'existingAiServicesName', if(empty(parameters('azureReuseConfig').existingAiServicesName), variables('_azureReuseConfigDefaults').existingAiServicesName, parameters('azureReuseConfig').existingAiServicesName), 'appConfigReuse', false(), 'existingAppConfigResourceGroupName', '', 'existingAppConfigName', '', 'appInsightsReuse', if(empty(parameters('azureReuseConfig').appInsightsReuse), variables('_azureReuseConfigDefaults').appInsightsReuse, equals(toLower(parameters('azureReuseConfig').appInsightsReuse), 'true')), 'existingAppInsightsResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppInsightsResourceGroupName), variables('_azureReuseConfigDefaults').existingAppInsightsResourceGroupName, parameters('azureReuseConfig').existingAppInsightsResourceGroupName), 'existingAppInsightsName', if(empty(parameters('azureReuseConfig').existingAppInsightsName), variables('_azureReuseConfigDefaults').existingAppInsightsName, parameters('azureReuseConfig').existingAppInsightsName), 'logAnalyticsWorkspaceReuse', if(empty(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), variables('_azureReuseConfigDefaults').logAnalyticsWorkspaceReuse, equals(toLower(parameters('azureReuseConfig').logAnalyticsWorkspaceReuse), 'true')), 'existingLogAnalyticsWorkspaceResourceId', if(empty(parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), variables('_azureReuseConfigDefaults').existingLogAnalyticsWorkspaceResourceId, parameters('azureReuseConfig').existingLogAnalyticsWorkspaceResourceId), 'appServicePlanReuse', if(empty(parameters('azureReuseConfig').appServicePlanReuse), variables('_azureReuseConfigDefaults').appServicePlanReuse, equals(toLower(parameters('azureReuseConfig').appServicePlanReuse), 'true')), 'existingAppServicePlanResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServicePlanResourceGroupName, parameters('azureReuseConfig').existingAppServicePlanResourceGroupName), 'existingAppServicePlanName', if(empty(parameters('azureReuseConfig').existingAppServicePlanName), variables('_azureReuseConfigDefaults').existingAppServicePlanName, parameters('azureReuseConfig').existingAppServicePlanName), 'aiSearchReuse', if(empty(parameters('azureReuseConfig').aiSearchReuse), variables('_azureReuseConfigDefaults').aiSearchReuse, equals(toLower(parameters('azureReuseConfig').aiSearchReuse), 'true')), 'existingAiSearchResourceGroupName', if(empty(parameters('azureReuseConfig').existingAiSearchResourceGroupName), variables('_azureReuseConfigDefaults').existingAiSearchResourceGroupName, parameters('azureReuseConfig').existingAiSearchResourceGroupName), 'existingAiSearchName', if(empty(parameters('azureReuseConfig').existingAiSearchName), variables('_azureReuseConfigDefaults').existingAiSearchName, parameters('azureReuseConfig').existingAiSearchName), 'cosmosDbReuse', if(empty(parameters('azureReuseConfig').cosmosDbReuse), variables('_azureReuseConfigDefaults').cosmosDbReuse, equals(toLower(parameters('azureReuseConfig').cosmosDbReuse), 'true')), 'existingCosmosDbResourceGroupName', if(empty(parameters('azureReuseConfig').existingCosmosDbResourceGroupName), variables('_azureReuseConfigDefaults').existingCosmosDbResourceGroupName, parameters('azureReuseConfig').existingCosmosDbResourceGroupName), 'existingCosmosDbAccountName', if(empty(parameters('azureReuseConfig').existingCosmosDbAccountName), variables('_azureReuseConfigDefaults').existingCosmosDbAccountName, parameters('azureReuseConfig').existingCosmosDbAccountName), 'existingCosmosDbDatabaseName', if(empty(parameters('azureReuseConfig').existingCosmosDbDatabaseName), variables('_azureReuseConfigDefaults').existingCosmosDbDatabaseName, parameters('azureReuseConfig').existingCosmosDbDatabaseName), 'keyVaultReuse', if(empty(parameters('azureReuseConfig').keyVaultReuse), variables('_azureReuseConfigDefaults').keyVaultReuse, equals(toLower(parameters('azureReuseConfig').keyVaultReuse), 'true')), 'existingKeyVaultResourceGroupName', if(empty(parameters('azureReuseConfig').existingKeyVaultResourceGroupName), variables('_azureReuseConfigDefaults').existingKeyVaultResourceGroupName, parameters('azureReuseConfig').existingKeyVaultResourceGroupName), 'existingKeyVaultName', if(empty(parameters('azureReuseConfig').existingKeyVaultName), variables('_azureReuseConfigDefaults').existingKeyVaultName, parameters('azureReuseConfig').existingKeyVaultName), 'storageReuse', if(empty(parameters('azureReuseConfig').storageReuse), variables('_azureReuseConfigDefaults').storageReuse, equals(toLower(parameters('azureReuseConfig').storageReuse), 'true')), 'existingStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingStorageResourceGroupName, parameters('azureReuseConfig').existingStorageResourceGroupName), 'existingStorageName', if(empty(parameters('azureReuseConfig').existingStorageName), variables('_azureReuseConfigDefaults').existingStorageName, parameters('azureReuseConfig').existingStorageName), 'vnetReuse', if(contains(parameters('azureReuseConfig'), 'vnetReuse'), equals(toLower(parameters('azureReuseConfig').vnetReuse), 'true'), parameters('vnetReuse')), 'existingVnetResourceGroupName', if(contains(parameters('azureReuseConfig'), 'existingVnetResourceGroupName'), parameters('azureReuseConfig').existingVnetResourceGroupName, parameters('existingVnetResourceGroupName')), 'existingVnetName', if(contains(parameters('azureReuseConfig'), 'existingVnetName'), parameters('azureReuseConfig').existingVnetName, parameters('existingVnetName')), 'existingAutomationPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingAutomationPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingAutomationPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingAutomationPrivateDnsZoneResourceId), 'existingOdsPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingOdsPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingOdsPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingOdsPrivateDnsZoneResourceId), 'existingOmsPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingOmsPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingOmsPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingOmsPrivateDnsZoneResourceId), 'existingAzureMonitorPrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingAzureMonitorPrivateDnsZoneResourceId, parameters('azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId), 'existingKeyVaultPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingKeyVaultPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingKeyVaultPrivateDnsZoneResourceId, parameters('existingKeyVaultPrivateDnsZoneResourceId')), 'existingCognitiveServicesPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingCognitiveServicesPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId, parameters('existingCognitiveServicesPrivateDnsZoneResourceId')), 'existingOpenAiPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingOpenAiPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId, parameters('existingOpenAiPrivateDnsZoneResourceId')), 'existingAiServicesPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingAiServicesPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId, parameters('existingAiServicesPrivateDnsZoneResourceId')), 'existingDocumentsPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingDocumentsPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingDocumentsPrivateDnsZoneResourceId, parameters('existingDocumentsPrivateDnsZoneResourceId')), 'existingBlobPrivateDnsZoneResourceId', if(contains(parameters('azureReuseConfig'), 'existingBlobPrivateDnsZoneResourceId'), parameters('azureReuseConfig').existingBlobPrivateDnsZoneResourceId, parameters('existingBlobPrivateDnsZoneResourceId')), 'existingQueuePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingQueuePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingQueuePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingQueuePrivateDnsZoneResourceId), 'existingTablePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingTablePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingTablePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingTablePrivateDnsZoneResourceId), 'existingFilePrivateDnsZoneResourceId', if(empty(parameters('azureReuseConfig').existingFilePrivateDnsZoneResourceId), variables('_azureReuseConfigDefaults').existingFilePrivateDnsZoneResourceId, parameters('azureReuseConfig').existingFilePrivateDnsZoneResourceId), 'existingBastionHostResourceId', if(empty(parameters('azureReuseConfig').existingBastionHostResourceId), variables('_azureReuseConfigDefaults').existingBastionHostResourceId, parameters('azureReuseConfig').existingBastionHostResourceId), 'orchestratorFunctionAppReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppReuse), 'true')), 'existingOrchestratorFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppResourceGroupName), 'existingOrchestratorFunctionAppName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppName, parameters('azureReuseConfig').existingOrchestratorFunctionAppName), 'dataIngestionFunctionAppReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppReuse), 'true')), 'existingDataIngestionFunctionAppResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppResourceGroupName), 'existingDataIngestionFunctionAppName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppName, parameters('azureReuseConfig').existingDataIngestionFunctionAppName), 'appServiceReuse', if(empty(parameters('azureReuseConfig').appServiceReuse), variables('_azureReuseConfigDefaults').appServiceReuse, equals(toLower(parameters('azureReuseConfig').appServiceReuse), 'true')), 'existingAppServiceName', if(empty(parameters('azureReuseConfig').existingAppServiceName), variables('_azureReuseConfigDefaults').existingAppServiceName, parameters('azureReuseConfig').existingAppServiceName), 'existingAppServiceNameResourceGroupName', if(empty(parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), variables('_azureReuseConfigDefaults').existingAppServiceNameResourceGroupName, parameters('azureReuseConfig').existingAppServiceNameResourceGroupName), 'orchestratorFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').orchestratorFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').orchestratorFunctionAppStorageReuse), 'true')), 'existingOrchestratorFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageName), 'existingOrchestratorFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingOrchestratorFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingOrchestratorFunctionAppStorageResourceGroupName), 'dataIngestionFunctionAppStorageReuse', if(empty(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), variables('_azureReuseConfigDefaults').dataIngestionFunctionAppStorageReuse, equals(toLower(parameters('azureReuseConfig').dataIngestionFunctionAppStorageReuse), 'true')), 'existingDataIngestionFunctionAppStorageName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageName), 'existingDataIngestionFunctionAppStorageResourceGroupName', if(empty(parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName), variables('_azureReuseConfigDefaults').existingDataIngestionFunctionAppStorageResourceGroupName, parameters('azureReuseConfig').existingDataIngestionFunctionAppStorageResourceGroupName)))]"
   },
   "resources": {
     "storageContributorRole": {
@@ -1247,7 +1228,7 @@
       "name": "[variables('roles').security.keyVaultSecretsUser]"
     },
     "cse": {
-      "condition": "[and(and(variables('_deployVM'), variables('_networkIsolation')), parameters('vmCustomScriptBootstrap'))]",
+      "condition": "[and(variables('_deployVM'), variables('_networkIsolation'))]",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2024-11-01",
       "name": "[format('{0}/cse', variables('_ztVmName'))]",
@@ -1298,8 +1279,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1884123022258932166"
+              "version": "0.38.33.27573",
+              "templateHash": "11990656938765969092"
             }
           },
           "definitions": {
@@ -1565,8 +1546,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1856222402027839980"
+              "version": "0.38.33.27573",
+              "templateHash": "17105149436054046218"
             }
           },
           "parameters": {
@@ -1659,8 +1640,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -1741,8 +1722,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -1823,8 +1804,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -1905,8 +1886,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -1963,7 +1944,7 @@
       ]
     },
     "logAnalyticsPe": {
-      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
+      "condition": "[and(variables('_networkIsolation'), or(not(empty(variables('_azureReuseConfig').existingAzureMonitorPrivateDnsZoneResourceId)), not(variables('_vnetReuse'))))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "[variables('logAnalyticsPEName')]",
@@ -1999,8 +1980,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
+              "version": "0.38.33.27573",
+              "templateHash": "13779265543666056831"
             }
           },
           "parameters": {
@@ -2135,8 +2116,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "8319907169908787908"
+              "version": "0.38.33.27573",
+              "templateHash": "2398363116478339196"
             }
           },
           "parameters": {
@@ -2229,6 +2210,10 @@
                 "dataLakeAnalyticsAccount": "dla",
                 "eventHubsNamespace": "evhns-",
                 "eventHub": "evh-",
+                "eventGridDomain": "evgd-",
+                "eventGridSubscriptions": "evgs-",
+                "eventGridTopic": "evgt-",
+                "eventGridSystemTopic": "egst-",
                 "hdInsightHadoopCluster": "hadoop-",
                 "hdInsightHBaseCluster": "hbase-",
                 "hdInsightKafkaCluster": "kafka-",
@@ -2513,8 +2498,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -2607,8 +2592,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
+              "version": "0.38.33.27573",
+              "templateHash": "13779265543666056831"
             }
           },
           "parameters": {
@@ -2737,8 +2722,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "14033479668226669969"
+              "version": "0.38.33.27573",
+              "templateHash": "15407229162527131505"
             }
           },
           "definitions": {
@@ -3056,7 +3041,7 @@
               },
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('name'))]",
               "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('name')), parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
               "properties": {
                 "principalId": "[parameters('roleAssignments')[copyIndex()].principalId]",
@@ -3078,7 +3063,7 @@
               "condition": "[not(equals(parameters('logAnalyticsWorkspaceName'), null()))]",
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
-              "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('name'))]",
               "name": "[format('{0}-diagnostic-settings', parameters('name'))]",
               "properties": {
                 "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]",
@@ -3178,8 +3163,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "4294880601659904220"
+              "version": "0.38.33.27573",
+              "templateHash": "529484074859346972"
             }
           },
           "parameters": {
@@ -3200,7 +3185,7 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('resourceName'))]",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('resourceName'))]",
               "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('resourceName')), parameters('principalId'), parameters('roleDefinitionId'))]",
               "properties": {
                 "principalId": "[parameters('principalId')]",
@@ -3249,8 +3234,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "5736890938839581039"
+              "version": "0.38.33.27573",
+              "templateHash": "3125774937767149578"
             }
           },
           "parameters": {
@@ -3321,8 +3306,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "14622754133553773058"
+              "version": "0.38.33.27573",
+              "templateHash": "10671315752801443734"
             }
           },
           "parameters": {
@@ -3382,8 +3367,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "14230494006747691901"
+              "version": "0.38.33.27573",
+              "templateHash": "15315341103048931827"
             }
           },
           "parameters": {
@@ -3443,8 +3428,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "14230494006747691901"
+              "version": "0.38.33.27573",
+              "templateHash": "15315341103048931827"
             }
           },
           "parameters": {
@@ -3505,8 +3490,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -3587,8 +3572,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -3669,8 +3654,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -3751,8 +3736,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -3845,8 +3830,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
+              "version": "0.38.33.27573",
+              "templateHash": "13779265543666056831"
             }
           },
           "parameters": {
@@ -3992,8 +3977,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "16524382185479909743"
+              "version": "0.38.33.27573",
+              "templateHash": "10979526790381580342"
             }
           },
           "parameters": {
@@ -29853,7 +29838,7 @@
       ]
     },
     "aiFoundryPe": {
-      "condition": "[and(variables('_networkIsolation'), or(not(variables('_vnetReuse')), variables('_hasAllAiFoundryDnsZonesInReuse')))]",
+      "condition": "[and(variables('_networkIsolation'), or(or(or(not(empty(variables('_azureReuseConfig').existingCognitiveServicesPrivateDnsZoneResourceId)), not(empty(variables('_azureReuseConfig').existingOpenAiPrivateDnsZoneResourceId))), not(empty(variables('_azureReuseConfig').existingAiServicesPrivateDnsZoneResourceId))), not(variables('_vnetReuse'))))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "aiFoundryPe",
@@ -29897,8 +29882,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
+              "version": "0.38.33.27573",
+              "templateHash": "13779265543666056831"
             }
           },
           "parameters": {
@@ -30052,8 +30037,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2861196475412209767"
+              "version": "0.38.33.27573",
+              "templateHash": "17805902092503611157"
             }
           },
           "parameters": {
@@ -30514,8 +30499,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "5885381114424504174"
+              "version": "0.38.33.27573",
+              "templateHash": "4918854493685017214"
             }
           },
           "parameters": {
@@ -30719,8 +30704,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -30813,8 +30798,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
+              "version": "0.38.33.27573",
+              "templateHash": "13779265543666056831"
             }
           },
           "parameters": {
@@ -30936,8 +30921,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13906767056371166682"
+              "version": "0.38.33.27573",
+              "templateHash": "10629035564903038209"
             }
           },
           "definitions": {
@@ -31112,10 +31097,6 @@
                 "value": "prompts.yaml"
               },
               {
-                "name": "AOAI_MULTI_MODAL",
-                "value": "true"
-              },
-              {
                 "name": "OPENAI_API_VERSION",
                 "value": "2024-05-01-preview"
               },
@@ -31183,8 +31164,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13088585585008055866"
+              "version": "0.38.33.27573",
+              "templateHash": "17616751812266766759"
             }
           },
           "parameters": {
@@ -31361,8 +31342,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -31443,8 +31424,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -31525,8 +31506,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -31607,8 +31588,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -31694,8 +31675,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "11726731678500636353"
+              "version": "0.38.33.27573",
+              "templateHash": "16398529451989747350"
             }
           },
           "parameters": {
@@ -31765,6 +31746,10 @@
                 "dataLakeAnalyticsAccount": "dla",
                 "eventHubsNamespace": "evhns-",
                 "eventHub": "evh-",
+                "eventGridDomain": "evgd-",
+                "eventGridSubscriptions": "evgs-",
+                "eventGridTopic": "evgt-",
+                "eventGridSystemTopic": "egst-",
                 "hdInsightHadoopCluster": "hadoop-",
                 "hdInsightHBaseCluster": "hbase-",
                 "hdInsightKafkaCluster": "kafka-",
@@ -32204,6 +32189,10 @@
                 "azureServiceBusDataReceiver": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
                 "azureServiceBusDataSender": "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39",
                 "bizTalkContributor": "5e3c6656-6cfa-4708-81fe-0de47ac73342",
+                "eventGridContributor": "1e241071-0855-49ea-94dc-649edcd759de",
+                "eventGridDataSender": "d5a91429-5739-47e2-a06b-3470a27159e7",
+                "eventGridEventSubscriptionContributor": "428e0ff0-5e57-4d9c-a221-2c70d0e0a443",
+                "eventGridEventSubscriptionReader": "2414bbcf-6497-4faf-8c65-045460748405",
                 "fhirDataContributor": "5a1fc7df-4bf1-4951-a576-89034ee01acd",
                 "fhirDataExporter": "3db33094-8700-4567-8da5-1501d4e7e843",
                 "fhirDataImporter": "4465e953-8ced-4406-a58e-0f6e3f3b530b",
@@ -32363,8 +32352,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -32494,8 +32483,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -32625,8 +32614,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -32756,8 +32745,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -32931,8 +32920,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "10557106198069547082"
+              "version": "0.38.33.27573",
+              "templateHash": "1177941546511190211"
             }
           },
           "definitions": {
@@ -33257,7 +33246,7 @@
               },
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('name'))]",
               "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), parameters('roleAssignments')[copyIndex()].principalId, parameters('roleAssignments')[copyIndex()].roleDefinitionId)]",
               "properties": {
                 "principalId": "[parameters('roleAssignments')[copyIndex()].principalId]",
@@ -33325,8 +33314,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "11726731678500636353"
+              "version": "0.38.33.27573",
+              "templateHash": "16398529451989747350"
             }
           },
           "parameters": {
@@ -33396,6 +33385,10 @@
                 "dataLakeAnalyticsAccount": "dla",
                 "eventHubsNamespace": "evhns-",
                 "eventHub": "evh-",
+                "eventGridDomain": "evgd-",
+                "eventGridSubscriptions": "evgs-",
+                "eventGridTopic": "evgt-",
+                "eventGridSystemTopic": "egst-",
                 "hdInsightHadoopCluster": "hadoop-",
                 "hdInsightHBaseCluster": "hbase-",
                 "hdInsightKafkaCluster": "kafka-",
@@ -33835,6 +33828,10 @@
                 "azureServiceBusDataReceiver": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
                 "azureServiceBusDataSender": "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39",
                 "bizTalkContributor": "5e3c6656-6cfa-4708-81fe-0de47ac73342",
+                "eventGridContributor": "1e241071-0855-49ea-94dc-649edcd759de",
+                "eventGridDataSender": "d5a91429-5739-47e2-a06b-3470a27159e7",
+                "eventGridEventSubscriptionContributor": "428e0ff0-5e57-4d9c-a221-2c70d0e0a443",
+                "eventGridEventSubscriptionReader": "2414bbcf-6497-4faf-8c65-045460748405",
                 "fhirDataContributor": "5a1fc7df-4bf1-4951-a576-89034ee01acd",
                 "fhirDataExporter": "3db33094-8700-4567-8da5-1501d4e7e843",
                 "fhirDataImporter": "4465e953-8ced-4406-a58e-0f6e3f3b530b",
@@ -33994,8 +33991,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -34125,8 +34122,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -34256,8 +34253,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -34387,8 +34384,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.46.1.21595",
-                      "templateHash": "1170831067660744435"
+                      "version": "0.38.33.27573",
+                      "templateHash": "13779265543666056831"
                     }
                   },
                   "parameters": {
@@ -40285,818 +40282,6 @@
         "vnet"
       ]
     },
-    "storageBlobPeReuse": {
-      "condition": "[and(and(variables('_networkIsolation'), variables('_vnetReuse')), not(empty(variables('_azureReuseConfig').existingBlobPrivateDnsZoneResourceId)))]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[format('{0}-blob-pe-reuse', variables('storageAccountName'))]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "name": {
-            "value": "[format('{0}-pep-blob', variables('storageAccountName'))]"
-          },
-          "tags": {
-            "value": "[variables('tags')]"
-          },
-          "subnetId": {
-            "value": "[reference('vnet').outputs.aiSubId.value]"
-          },
-          "serviceId": {
-            "value": "[reference('storage').outputs.id.value]"
-          },
-          "groupIds": {
-            "value": [
-              "blob"
-            ]
-          },
-          "dnsZoneId": {
-            "value": "[variables('_azureReuseConfig').existingBlobPrivateDnsZoneResourceId]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
-            }
-          },
-          "parameters": {
-            "location": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {}
-            },
-            "serviceId": {
-              "type": "string"
-            },
-            "subnetId": {
-              "type": "string"
-            },
-            "groupIds": {
-              "type": "array",
-              "defaultValue": []
-            },
-            "dnsZoneId": {
-              "type": "string",
-              "defaultValue": ""
-            },
-            "dnsZoneIds": {
-              "type": "array",
-              "defaultValue": []
-            }
-          },
-          "variables": {
-            "effectiveZoneIds": "[if(not(empty(parameters('dnsZoneIds'))), parameters('dnsZoneIds'), createArray(parameters('dnsZoneId')))]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2024-05-01",
-              "name": "[parameters('name')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('subnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "privatelinkServiceonnection",
-                    "properties": {
-                      "privateLinkServiceId": "[parameters('serviceId')]",
-                      "groupIds": "[parameters('groupIds')]"
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
-              "apiVersion": "2024-05-01",
-              "name": "[format('{0}/{1}', parameters('name'), format('{0}-group', parameters('name')))]",
-              "properties": {
-                "copy": [
-                  {
-                    "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('effectiveZoneIds'))]",
-                    "input": {
-                      "name": "[format('config{0}', add(copyIndex('privateDnsZoneConfigs'), 1))]",
-                      "properties": {
-                        "privateDnsZoneId": "[variables('effectiveZoneIds')[copyIndex('privateDnsZoneConfigs')]]"
-                      }
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', parameters('name'))]"
-              ]
-            }
-          ],
-          "outputs": {
-            "name": {
-              "type": "string",
-              "value": "[parameters('name')]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "storage",
-        "vnet"
-      ]
-    },
-    "storageQueuePeReuse": {
-      "condition": "[and(and(and(variables('_networkIsolation'), variables('_vnetReuse')), not(empty(parameters('storagePrivateEndpointSubnetName')))), not(empty(variables('_azureReuseConfig').existingQueuePrivateDnsZoneResourceId)))]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[format('{0}-queue-pe-reuse', variables('storageAccountName'))]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "name": {
-            "value": "[format('{0}-pep-queue', variables('storageAccountName'))]"
-          },
-          "tags": {
-            "value": "[variables('tags')]"
-          },
-          "subnetId": {
-            "value": "[variables('storagePrivateEndpointSubnetId')]"
-          },
-          "serviceId": {
-            "value": "[reference('storage').outputs.id.value]"
-          },
-          "groupIds": {
-            "value": [
-              "queue"
-            ]
-          },
-          "dnsZoneId": {
-            "value": "[variables('_azureReuseConfig').existingQueuePrivateDnsZoneResourceId]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
-            }
-          },
-          "parameters": {
-            "location": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {}
-            },
-            "serviceId": {
-              "type": "string"
-            },
-            "subnetId": {
-              "type": "string"
-            },
-            "groupIds": {
-              "type": "array",
-              "defaultValue": []
-            },
-            "dnsZoneId": {
-              "type": "string",
-              "defaultValue": ""
-            },
-            "dnsZoneIds": {
-              "type": "array",
-              "defaultValue": []
-            }
-          },
-          "variables": {
-            "effectiveZoneIds": "[if(not(empty(parameters('dnsZoneIds'))), parameters('dnsZoneIds'), createArray(parameters('dnsZoneId')))]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2024-05-01",
-              "name": "[parameters('name')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('subnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "privatelinkServiceonnection",
-                    "properties": {
-                      "privateLinkServiceId": "[parameters('serviceId')]",
-                      "groupIds": "[parameters('groupIds')]"
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
-              "apiVersion": "2024-05-01",
-              "name": "[format('{0}/{1}', parameters('name'), format('{0}-group', parameters('name')))]",
-              "properties": {
-                "copy": [
-                  {
-                    "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('effectiveZoneIds'))]",
-                    "input": {
-                      "name": "[format('config{0}', add(copyIndex('privateDnsZoneConfigs'), 1))]",
-                      "properties": {
-                        "privateDnsZoneId": "[variables('effectiveZoneIds')[copyIndex('privateDnsZoneConfigs')]]"
-                      }
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', parameters('name'))]"
-              ]
-            }
-          ],
-          "outputs": {
-            "name": {
-              "type": "string",
-              "value": "[parameters('name')]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "storage"
-      ]
-    },
-    "storageTablePeReuse": {
-      "condition": "[and(and(and(variables('_networkIsolation'), variables('_vnetReuse')), not(empty(parameters('storagePrivateEndpointSubnetName')))), not(empty(variables('_azureReuseConfig').existingTablePrivateDnsZoneResourceId)))]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[format('{0}-table-pe-reuse', variables('storageAccountName'))]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "name": {
-            "value": "[format('{0}-pep-table', variables('storageAccountName'))]"
-          },
-          "tags": {
-            "value": "[variables('tags')]"
-          },
-          "subnetId": {
-            "value": "[variables('storagePrivateEndpointSubnetId')]"
-          },
-          "serviceId": {
-            "value": "[reference('storage').outputs.id.value]"
-          },
-          "groupIds": {
-            "value": [
-              "table"
-            ]
-          },
-          "dnsZoneId": {
-            "value": "[variables('_azureReuseConfig').existingTablePrivateDnsZoneResourceId]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
-            }
-          },
-          "parameters": {
-            "location": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {}
-            },
-            "serviceId": {
-              "type": "string"
-            },
-            "subnetId": {
-              "type": "string"
-            },
-            "groupIds": {
-              "type": "array",
-              "defaultValue": []
-            },
-            "dnsZoneId": {
-              "type": "string",
-              "defaultValue": ""
-            },
-            "dnsZoneIds": {
-              "type": "array",
-              "defaultValue": []
-            }
-          },
-          "variables": {
-            "effectiveZoneIds": "[if(not(empty(parameters('dnsZoneIds'))), parameters('dnsZoneIds'), createArray(parameters('dnsZoneId')))]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2024-05-01",
-              "name": "[parameters('name')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('subnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "privatelinkServiceonnection",
-                    "properties": {
-                      "privateLinkServiceId": "[parameters('serviceId')]",
-                      "groupIds": "[parameters('groupIds')]"
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
-              "apiVersion": "2024-05-01",
-              "name": "[format('{0}/{1}', parameters('name'), format('{0}-group', parameters('name')))]",
-              "properties": {
-                "copy": [
-                  {
-                    "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('effectiveZoneIds'))]",
-                    "input": {
-                      "name": "[format('config{0}', add(copyIndex('privateDnsZoneConfigs'), 1))]",
-                      "properties": {
-                        "privateDnsZoneId": "[variables('effectiveZoneIds')[copyIndex('privateDnsZoneConfigs')]]"
-                      }
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', parameters('name'))]"
-              ]
-            }
-          ],
-          "outputs": {
-            "name": {
-              "type": "string",
-              "value": "[parameters('name')]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "storage"
-      ]
-    },
-    "funcStorageBlobPeReuse": {
-      "condition": "[and(and(variables('_networkIsolation'), variables('_vnetReuse')), not(empty(variables('_azureReuseConfig').existingBlobPrivateDnsZoneResourceId)))]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[format('{0}-blob-pe-reuse', variables('funcStorageName'))]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "name": {
-            "value": "[format('{0}-pep-blob', variables('funcStorageName'))]"
-          },
-          "tags": {
-            "value": "[variables('tags')]"
-          },
-          "subnetId": {
-            "value": "[reference('vnet').outputs.aiSubId.value]"
-          },
-          "serviceId": {
-            "value": "[reference('procFuncStorage').outputs.resourceId.value]"
-          },
-          "groupIds": {
-            "value": [
-              "blob"
-            ]
-          },
-          "dnsZoneId": {
-            "value": "[variables('_azureReuseConfig').existingBlobPrivateDnsZoneResourceId]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
-            }
-          },
-          "parameters": {
-            "location": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {}
-            },
-            "serviceId": {
-              "type": "string"
-            },
-            "subnetId": {
-              "type": "string"
-            },
-            "groupIds": {
-              "type": "array",
-              "defaultValue": []
-            },
-            "dnsZoneId": {
-              "type": "string",
-              "defaultValue": ""
-            },
-            "dnsZoneIds": {
-              "type": "array",
-              "defaultValue": []
-            }
-          },
-          "variables": {
-            "effectiveZoneIds": "[if(not(empty(parameters('dnsZoneIds'))), parameters('dnsZoneIds'), createArray(parameters('dnsZoneId')))]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2024-05-01",
-              "name": "[parameters('name')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('subnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "privatelinkServiceonnection",
-                    "properties": {
-                      "privateLinkServiceId": "[parameters('serviceId')]",
-                      "groupIds": "[parameters('groupIds')]"
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
-              "apiVersion": "2024-05-01",
-              "name": "[format('{0}/{1}', parameters('name'), format('{0}-group', parameters('name')))]",
-              "properties": {
-                "copy": [
-                  {
-                    "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('effectiveZoneIds'))]",
-                    "input": {
-                      "name": "[format('config{0}', add(copyIndex('privateDnsZoneConfigs'), 1))]",
-                      "properties": {
-                        "privateDnsZoneId": "[variables('effectiveZoneIds')[copyIndex('privateDnsZoneConfigs')]]"
-                      }
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', parameters('name'))]"
-              ]
-            }
-          ],
-          "outputs": {
-            "name": {
-              "type": "string",
-              "value": "[parameters('name')]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "procFuncStorage",
-        "vnet"
-      ]
-    },
-    "funcStorageQueuePeReuse": {
-      "condition": "[and(and(and(variables('_networkIsolation'), variables('_vnetReuse')), not(empty(parameters('storagePrivateEndpointSubnetName')))), not(empty(variables('_azureReuseConfig').existingQueuePrivateDnsZoneResourceId)))]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[format('{0}-queue-pe-reuse', variables('funcStorageName'))]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "name": {
-            "value": "[format('{0}-pep-queue', variables('funcStorageName'))]"
-          },
-          "tags": {
-            "value": "[variables('tags')]"
-          },
-          "subnetId": {
-            "value": "[variables('storagePrivateEndpointSubnetId')]"
-          },
-          "serviceId": {
-            "value": "[reference('procFuncStorage').outputs.resourceId.value]"
-          },
-          "groupIds": {
-            "value": [
-              "queue"
-            ]
-          },
-          "dnsZoneId": {
-            "value": "[variables('_azureReuseConfig').existingQueuePrivateDnsZoneResourceId]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
-            }
-          },
-          "parameters": {
-            "location": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {}
-            },
-            "serviceId": {
-              "type": "string"
-            },
-            "subnetId": {
-              "type": "string"
-            },
-            "groupIds": {
-              "type": "array",
-              "defaultValue": []
-            },
-            "dnsZoneId": {
-              "type": "string",
-              "defaultValue": ""
-            },
-            "dnsZoneIds": {
-              "type": "array",
-              "defaultValue": []
-            }
-          },
-          "variables": {
-            "effectiveZoneIds": "[if(not(empty(parameters('dnsZoneIds'))), parameters('dnsZoneIds'), createArray(parameters('dnsZoneId')))]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2024-05-01",
-              "name": "[parameters('name')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('subnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "privatelinkServiceonnection",
-                    "properties": {
-                      "privateLinkServiceId": "[parameters('serviceId')]",
-                      "groupIds": "[parameters('groupIds')]"
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
-              "apiVersion": "2024-05-01",
-              "name": "[format('{0}/{1}', parameters('name'), format('{0}-group', parameters('name')))]",
-              "properties": {
-                "copy": [
-                  {
-                    "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('effectiveZoneIds'))]",
-                    "input": {
-                      "name": "[format('config{0}', add(copyIndex('privateDnsZoneConfigs'), 1))]",
-                      "properties": {
-                        "privateDnsZoneId": "[variables('effectiveZoneIds')[copyIndex('privateDnsZoneConfigs')]]"
-                      }
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', parameters('name'))]"
-              ]
-            }
-          ],
-          "outputs": {
-            "name": {
-              "type": "string",
-              "value": "[parameters('name')]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "procFuncStorage"
-      ]
-    },
-    "funcStorageTablePeReuse": {
-      "condition": "[and(and(and(variables('_networkIsolation'), variables('_vnetReuse')), not(empty(parameters('storagePrivateEndpointSubnetName')))), not(empty(variables('_azureReuseConfig').existingTablePrivateDnsZoneResourceId)))]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[format('{0}-table-pe-reuse', variables('funcStorageName'))]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "name": {
-            "value": "[format('{0}-pep-table', variables('funcStorageName'))]"
-          },
-          "tags": {
-            "value": "[variables('tags')]"
-          },
-          "subnetId": {
-            "value": "[variables('storagePrivateEndpointSubnetId')]"
-          },
-          "serviceId": {
-            "value": "[reference('procFuncStorage').outputs.resourceId.value]"
-          },
-          "groupIds": {
-            "value": [
-              "table"
-            ]
-          },
-          "dnsZoneId": {
-            "value": "[variables('_azureReuseConfig').existingTablePrivateDnsZoneResourceId]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
-            }
-          },
-          "parameters": {
-            "location": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {}
-            },
-            "serviceId": {
-              "type": "string"
-            },
-            "subnetId": {
-              "type": "string"
-            },
-            "groupIds": {
-              "type": "array",
-              "defaultValue": []
-            },
-            "dnsZoneId": {
-              "type": "string",
-              "defaultValue": ""
-            },
-            "dnsZoneIds": {
-              "type": "array",
-              "defaultValue": []
-            }
-          },
-          "variables": {
-            "effectiveZoneIds": "[if(not(empty(parameters('dnsZoneIds'))), parameters('dnsZoneIds'), createArray(parameters('dnsZoneId')))]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2024-05-01",
-              "name": "[parameters('name')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('subnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "privatelinkServiceonnection",
-                    "properties": {
-                      "privateLinkServiceId": "[parameters('serviceId')]",
-                      "groupIds": "[parameters('groupIds')]"
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
-              "apiVersion": "2024-05-01",
-              "name": "[format('{0}/{1}', parameters('name'), format('{0}-group', parameters('name')))]",
-              "properties": {
-                "copy": [
-                  {
-                    "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('effectiveZoneIds'))]",
-                    "input": {
-                      "name": "[format('config{0}', add(copyIndex('privateDnsZoneConfigs'), 1))]",
-                      "properties": {
-                        "privateDnsZoneId": "[variables('effectiveZoneIds')[copyIndex('privateDnsZoneConfigs')]]"
-                      }
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', parameters('name'))]"
-              ]
-            }
-          ],
-          "outputs": {
-            "name": {
-              "type": "string",
-              "value": "[parameters('name')]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "procFuncStorage"
-      ]
-    },
     "hostingPlan": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
@@ -41608,7 +40793,7 @@
       }
     },
     "websitesDnsZone": {
-      "condition": "[and(and(variables('_networkIsolation'), not(variables('_vnetReuse'))), empty(variables('_azureReuseConfig').existingWebsitesPrivateDnsZoneResourceId))]",
+      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "websites-dnszones",
@@ -41632,8 +40817,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13764700976547619661"
+              "version": "0.38.33.27573",
+              "templateHash": "2913655381822031096"
             }
           },
           "parameters": {
@@ -41690,7 +40875,7 @@
       ]
     },
     "processingFunctionAppPe": {
-      "condition": "[and(variables('_networkIsolation'), or(not(empty(variables('_azureReuseConfig').existingWebsitesPrivateDnsZoneResourceId)), not(variables('_vnetReuse'))))]",
+      "condition": "[and(variables('_networkIsolation'), not(variables('_vnetReuse')))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "[variables('_processingfunctionAppPe')]",
@@ -41718,7 +40903,7 @@
               "sites"
             ]
           },
-          "dnsZoneId": "[if(variables('_networkIsolation'), if(not(empty(variables('_azureReuseConfig').existingWebsitesPrivateDnsZoneResourceId)), createObject('value', variables('_azureReuseConfig').existingWebsitesPrivateDnsZoneResourceId), createObject('value', reference('websitesDnsZone').outputs.id.value)), createObject('value', ''))]"
+          "dnsZoneId": "[if(variables('_networkIsolation'), createObject('value', reference('websitesDnsZone').outputs.id.value), createObject('value', ''))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -41726,8 +40911,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "1170831067660744435"
+              "version": "0.38.33.27573",
+              "templateHash": "13779265543666056831"
             }
           },
           "parameters": {
@@ -41849,8 +41034,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "13906767056371166682"
+              "version": "0.38.33.27573",
+              "templateHash": "10629035564903038209"
             }
           },
           "definitions": {
@@ -54530,6 +53715,764 @@
         "vnet"
       ]
     },
+    "bronzeEventGridTopic": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "bronzeEventGridTopic",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[variables('bronzeSystemTopicName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          },
+          "source": {
+            "value": "[reference('storage').outputs.id.value]"
+          },
+          "topicType": {
+            "value": "Microsoft.Storage.StorageAccounts"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.35.1.17967",
+              "templateHash": "17244733459327888872"
+            },
+            "name": "Event Grid System Topics",
+            "description": "This module deploys an Event Grid System Topic."
+          },
+          "definitions": {
+            "diagnosticSettingFullType": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The name of the diagnostic setting."
+                  }
+                },
+                "logCategoriesAndGroups": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "nullable": true,
+                        "metadata": {
+                          "description": "Optional. Name of a Diagnostic Log category for a resource type this setting is applied to. Set the specific logs to collect here."
+                        }
+                      },
+                      "categoryGroup": {
+                        "type": "string",
+                        "nullable": true,
+                        "metadata": {
+                          "description": "Optional. Name of a Diagnostic Log category group for a resource type this setting is applied to. Set to `allLogs` to collect all logs."
+                        }
+                      },
+                      "enabled": {
+                        "type": "bool",
+                        "nullable": true,
+                        "metadata": {
+                          "description": "Optional. Enable or disable the category explicitly. Default is `true`."
+                        }
+                      }
+                    }
+                  },
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The name of logs that will be streamed. \"allLogs\" includes all possible logs for the resource. Set to `[]` to disable log collection."
+                  }
+                },
+                "metricCategories": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "metadata": {
+                          "description": "Required. Name of a Diagnostic Metric category for a resource type this setting is applied to. Set to `AllMetrics` to collect all metrics."
+                        }
+                      },
+                      "enabled": {
+                        "type": "bool",
+                        "nullable": true,
+                        "metadata": {
+                          "description": "Optional. Enable or disable the category explicitly. Default is `true`."
+                        }
+                      }
+                    }
+                  },
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The name of metrics that will be streamed. \"allMetrics\" includes all possible metrics for the resource. Set to `[]` to disable metric collection."
+                  }
+                },
+                "logAnalyticsDestinationType": {
+                  "type": "string",
+                  "allowedValues": [
+                    "AzureDiagnostics",
+                    "Dedicated"
+                  ],
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. A string indicating whether the export to Log Analytics should use the default destination type, i.e. AzureDiagnostics, or use a destination type."
+                  }
+                },
+                "workspaceResourceId": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Resource ID of the diagnostic log analytics workspace. For security reasons, it is recommended to set diagnostic settings to send data to either storage account, log analytics workspace or event hub."
+                  }
+                },
+                "storageAccountResourceId": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Resource ID of the diagnostic storage account. For security reasons, it is recommended to set diagnostic settings to send data to either storage account, log analytics workspace or event hub."
+                  }
+                },
+                "eventHubAuthorizationRuleResourceId": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Resource ID of the diagnostic event hub authorization rule for the Event Hubs namespace in which the event hub should be created or streamed to."
+                  }
+                },
+                "eventHubName": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Name of the diagnostic event hub within the namespace to which logs are streamed. Without this, an event hub is created for each log category. For security reasons, it is recommended to set diagnostic settings to send data to either storage account, log analytics workspace or event hub."
+                  }
+                },
+                "marketplacePartnerResourceId": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The full ARM resource ID of the Marketplace resource to which you would like to send Diagnostic Logs."
+                  }
+                }
+              },
+              "metadata": {
+                "description": "An AVM-aligned type for a diagnostic setting. To be used if both logs & metrics are supported by the resource provider.",
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "br:mcr.microsoft.com/bicep/avm/utl/types/avm-common-types:0.5.1"
+                }
+              }
+            },
+            "lockType": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Specify the name of lock."
+                  }
+                },
+                "kind": {
+                  "type": "string",
+                  "allowedValues": [
+                    "CanNotDelete",
+                    "None",
+                    "ReadOnly"
+                  ],
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Specify the type of lock."
+                  }
+                }
+              },
+              "metadata": {
+                "description": "An AVM-aligned type for a lock.",
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "br:mcr.microsoft.com/bicep/avm/utl/types/avm-common-types:0.5.1"
+                }
+              }
+            },
+            "managedIdentityAllType": {
+              "type": "object",
+              "properties": {
+                "systemAssigned": {
+                  "type": "bool",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Enables system assigned managed identity on the resource."
+                  }
+                },
+                "userAssignedResourceIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The resource ID(s) to assign to the resource. Required if a user assigned identity is used for encryption."
+                  }
+                }
+              },
+              "metadata": {
+                "description": "An AVM-aligned type for a managed identity configuration. To be used if both a system-assigned & user-assigned identities are supported by the resource provider.",
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "br:mcr.microsoft.com/bicep/avm/utl/types/avm-common-types:0.5.1"
+                }
+              }
+            },
+            "roleAssignmentType": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The name (as GUID) of the role assignment. If not provided, a GUID will be generated."
+                  }
+                },
+                "roleDefinitionIdOrName": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Required. The role to assign. You can provide either the display name of the role definition, the role definition GUID, or its fully qualified ID in the following format: '/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11'."
+                  }
+                },
+                "principalId": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Required. The principal ID of the principal (user/group/identity) to assign the role to."
+                  }
+                },
+                "principalType": {
+                  "type": "string",
+                  "allowedValues": [
+                    "Device",
+                    "ForeignGroup",
+                    "Group",
+                    "ServicePrincipal",
+                    "User"
+                  ],
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The principal type of the assigned principal ID."
+                  }
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The description of the role assignment."
+                  }
+                },
+                "condition": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to. e.g.: @Resource[Microsoft.Storage/storageAccounts/blobServices/containers:ContainerName] StringEqualsIgnoreCase \"foo_storage_container\"."
+                  }
+                },
+                "conditionVersion": {
+                  "type": "string",
+                  "allowedValues": [
+                    "2.0"
+                  ],
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Version of the condition."
+                  }
+                },
+                "delegatedManagedIdentityResourceId": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. The Resource Id of the delegated managed identity resource."
+                  }
+                }
+              },
+              "metadata": {
+                "description": "An AVM-aligned type for a role assignment.",
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "br:mcr.microsoft.com/bicep/avm/utl/types/avm-common-types:0.5.1"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. The name of the Event Grid Topic."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Optional. Location for all Resources."
+              }
+            },
+            "source": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Source for the system topic."
+              }
+            },
+            "topicType": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. TopicType for the system topic."
+              }
+            },
+            "eventSubscriptions": {
+              "type": "array",
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. Event subscriptions to deploy."
+              }
+            },
+            "diagnosticSettings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/diagnosticSettingFullType"
+              },
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. The diagnostic settings of the service."
+              }
+            },
+            "roleAssignments": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/roleAssignmentType"
+              },
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. Array of role assignments to create."
+              }
+            },
+            "lock": {
+              "$ref": "#/definitions/lockType",
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. The lock settings of the service."
+              }
+            },
+            "managedIdentities": {
+              "$ref": "#/definitions/managedIdentityAllType",
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. The managed identity definition for this resource."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. Tags of the resource."
+              }
+            },
+            "enableTelemetry": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Optional. Enable/Disable usage telemetry for module."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "formattedRoleAssignments",
+                "count": "[length(coalesce(parameters('roleAssignments'), createArray()))]",
+                "input": "[union(coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')], createObject('roleDefinitionId', coalesce(tryGet(variables('builtInRoleNames'), coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName), if(contains(coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName, '/providers/Microsoft.Authorization/roleDefinitions/'), coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName, subscriptionResourceId('Microsoft.Authorization/roleDefinitions', coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName)))))]"
+              }
+            ],
+            "formattedUserAssignedIdentities": "[reduce(map(coalesce(tryGet(parameters('managedIdentities'), 'userAssignedResourceIds'), createArray()), lambda('id', createObject(format('{0}', lambdaVariables('id')), createObject()))), createObject(), lambda('cur', 'next', union(lambdaVariables('cur'), lambdaVariables('next'))))]",
+            "identity": "[if(not(empty(parameters('managedIdentities'))), createObject('type', if(coalesce(tryGet(parameters('managedIdentities'), 'systemAssigned'), false()), if(not(empty(coalesce(tryGet(parameters('managedIdentities'), 'userAssignedResourceIds'), createObject()))), 'SystemAssigned,UserAssigned', 'SystemAssigned'), if(not(empty(coalesce(tryGet(parameters('managedIdentities'), 'userAssignedResourceIds'), createObject()))), 'UserAssigned', null())), 'userAssignedIdentities', if(not(empty(variables('formattedUserAssignedIdentities'))), variables('formattedUserAssignedIdentities'), null())), null())]",
+            "builtInRoleNames": {
+              "Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+              "EventGrid Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1e241071-0855-49ea-94dc-649edcd759de')]",
+              "EventGrid Data Sender": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'd5a91429-5739-47e2-a06b-3470a27159e7')]",
+              "EventGrid EventSubscription Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '428e0ff0-5e57-4d9c-a221-2c70d0e0a443')]",
+              "EventGrid EventSubscription Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2414bbcf-6497-4faf-8c65-045460748405')]",
+              "Owner": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
+              "Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
+              "Role Based Access Control Administrator": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'f58310d9-a9f6-439a-9e8d-f62e7b41a168')]",
+              "User Access Administrator": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]"
+            }
+          },
+          "resources": {
+            "avmTelemetry": {
+              "condition": "[parameters('enableTelemetry')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2024-03-01",
+              "name": "[take(format('46d3xbcp.res.eventgrid-systemtopic.{0}.{1}', replace('0.6.1', '.', '-'), substring(uniqueString(deployment().name, parameters('location')), 0, 4)), 64)]",
+              "properties": {
+                "mode": "Incremental",
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "resources": [],
+                  "outputs": {
+                    "telemetry": {
+                      "type": "String",
+                      "value": "For more information, see https://aka.ms/avm/TelemetryInfo"
+                    }
+                  }
+                }
+              }
+            },
+            "systemTopic": {
+              "type": "Microsoft.EventGrid/systemTopics",
+              "apiVersion": "2023-12-15-preview",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "identity": "[variables('identity')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "source": "[parameters('source')]",
+                "topicType": "[parameters('topicType')]"
+              }
+            },
+            "systemTopic_lock": {
+              "condition": "[and(not(empty(coalesce(parameters('lock'), createObject()))), not(equals(tryGet(parameters('lock'), 'kind'), 'None')))]",
+              "type": "Microsoft.Authorization/locks",
+              "apiVersion": "2020-05-01",
+              "scope": "[format('Microsoft.EventGrid/systemTopics/{0}', parameters('name'))]",
+              "name": "[coalesce(tryGet(parameters('lock'), 'name'), format('lock-{0}', parameters('name')))]",
+              "properties": {
+                "level": "[coalesce(tryGet(parameters('lock'), 'kind'), '')]",
+                "notes": "[if(equals(tryGet(parameters('lock'), 'kind'), 'CanNotDelete'), 'Cannot delete resource or child resources.', 'Cannot delete or modify the resource or child resources.')]"
+              },
+              "dependsOn": [
+                "systemTopic"
+              ]
+            },
+            "systemTopic_diagnosticSettings": {
+              "copy": {
+                "name": "systemTopic_diagnosticSettings",
+                "count": "[length(coalesce(parameters('diagnosticSettings'), createArray()))]"
+              },
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.EventGrid/systemTopics/{0}', parameters('name'))]",
+              "name": "[coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'name'), format('{0}-diagnosticSettings', parameters('name')))]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "metrics",
+                    "count": "[length(coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'metricCategories'), createArray(createObject('category', 'AllMetrics'))))]",
+                    "input": {
+                      "category": "[coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'metricCategories'), createArray(createObject('category', 'AllMetrics')))[copyIndex('metrics')].category]",
+                      "enabled": "[coalesce(tryGet(coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'metricCategories'), createArray(createObject('category', 'AllMetrics')))[copyIndex('metrics')], 'enabled'), true())]",
+                      "timeGrain": null
+                    }
+                  },
+                  {
+                    "name": "logs",
+                    "count": "[length(coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'logCategoriesAndGroups'), createArray(createObject('categoryGroup', 'allLogs'))))]",
+                    "input": {
+                      "categoryGroup": "[tryGet(coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'logCategoriesAndGroups'), createArray(createObject('categoryGroup', 'allLogs')))[copyIndex('logs')], 'categoryGroup')]",
+                      "category": "[tryGet(coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'logCategoriesAndGroups'), createArray(createObject('categoryGroup', 'allLogs')))[copyIndex('logs')], 'category')]",
+                      "enabled": "[coalesce(tryGet(coalesce(tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'logCategoriesAndGroups'), createArray(createObject('categoryGroup', 'allLogs')))[copyIndex('logs')], 'enabled'), true())]"
+                    }
+                  }
+                ],
+                "storageAccountId": "[tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'storageAccountResourceId')]",
+                "workspaceId": "[tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'workspaceResourceId')]",
+                "eventHubAuthorizationRuleId": "[tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'eventHubAuthorizationRuleResourceId')]",
+                "eventHubName": "[tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'eventHubName')]",
+                "marketplacePartnerId": "[tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'marketplacePartnerResourceId')]",
+                "logAnalyticsDestinationType": "[tryGet(coalesce(parameters('diagnosticSettings'), createArray())[copyIndex()], 'logAnalyticsDestinationType')]"
+              },
+              "dependsOn": [
+                "systemTopic"
+              ]
+            },
+            "systemTopic_roleAssignments": {
+              "copy": {
+                "name": "systemTopic_roleAssignments",
+                "count": "[length(coalesce(variables('formattedRoleAssignments'), createArray()))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.EventGrid/systemTopics/{0}', parameters('name'))]",
+              "name": "[coalesce(tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'name'), guid(resourceId('Microsoft.EventGrid/systemTopics', parameters('name')), coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].principalId, coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].roleDefinitionId))]",
+              "properties": {
+                "roleDefinitionId": "[coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].roleDefinitionId]",
+                "principalId": "[coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].principalId]",
+                "description": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'description')]",
+                "principalType": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'principalType')]",
+                "condition": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'condition')]",
+                "conditionVersion": "[if(not(empty(tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'condition'))), coalesce(tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'conditionVersion'), '2.0'), null())]",
+                "delegatedManagedIdentityResourceId": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'delegatedManagedIdentityResourceId')]"
+              },
+              "dependsOn": [
+                "systemTopic"
+              ]
+            },
+            "systemTopics_eventSubscriptions": {
+              "copy": {
+                "name": "systemTopics_eventSubscriptions",
+                "count": "[length(coalesce(parameters('eventSubscriptions'), createArray()))]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('{0}-EventGrid-SysTopics-EventSubs-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "destination": {
+                    "value": "[coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()].destination]"
+                  },
+                  "systemTopicName": {
+                    "value": "[parameters('name')]"
+                  },
+                  "name": {
+                    "value": "[coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()].name]"
+                  },
+                  "deadLetterDestination": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'deadLetterDestination')]"
+                  },
+                  "deadLetterWithResourceIdentity": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'deadLetterWithResourceIdentity')]"
+                  },
+                  "deliveryWithResourceIdentity": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'deliveryWithResourceIdentity')]"
+                  },
+                  "eventDeliverySchema": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'eventDeliverySchema')]"
+                  },
+                  "expirationTimeUtc": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'expirationTimeUtc')]"
+                  },
+                  "filter": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'filter')]"
+                  },
+                  "labels": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'labels')]"
+                  },
+                  "retryPolicy": {
+                    "value": "[tryGet(coalesce(parameters('eventSubscriptions'), createArray())[copyIndex()], 'retryPolicy')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "languageVersion": "2.0",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.35.1.17967",
+                      "templateHash": "1939762263992707789"
+                    },
+                    "name": "Event Grid System Topic Event Subscriptions",
+                    "description": "This module deploys an Event Grid System Topic Event Subscription."
+                  },
+                  "parameters": {
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. The name of the Event Subscription."
+                      }
+                    },
+                    "systemTopicName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. Name of the Event Grid System Topic."
+                      }
+                    },
+                    "deadLetterDestination": {
+                      "type": "object",
+                      "nullable": true,
+                      "metadata": {
+                        "description": "Optional. Dead Letter Destination. (See https://learn.microsoft.com/en-us/azure/templates/microsoft.eventgrid/eventsubscriptions?pivots=deployment-language-bicep#deadletterdestination-objects for more information)."
+                      }
+                    },
+                    "deadLetterWithResourceIdentity": {
+                      "type": "object",
+                      "nullable": true,
+                      "metadata": {
+                        "description": "Optional. Dead Letter with Resource Identity Configuration. (See https://learn.microsoft.com/en-us/azure/templates/microsoft.eventgrid/eventsubscriptions?pivots=deployment-language-bicep#deadletterwithresourceidentity-objects for more information)."
+                      }
+                    },
+                    "deliveryWithResourceIdentity": {
+                      "type": "object",
+                      "nullable": true,
+                      "metadata": {
+                        "description": "Optional. Delivery with Resource Identity Configuration. (See https://learn.microsoft.com/en-us/azure/templates/microsoft.eventgrid/eventsubscriptions?pivots=deployment-language-bicep#deliverywithresourceidentity-objects for more information)."
+                      }
+                    },
+                    "destination": {
+                      "type": "object",
+                      "metadata": {
+                        "description": "Required. The destination for the event subscription. (See https://learn.microsoft.com/en-us/azure/templates/microsoft.eventgrid/eventsubscriptions?pivots=deployment-language-bicep#eventsubscriptiondestination-objects for more information)."
+                      }
+                    },
+                    "eventDeliverySchema": {
+                      "type": "string",
+                      "defaultValue": "EventGridSchema",
+                      "allowedValues": [
+                        "CloudEventSchemaV1_0",
+                        "CustomInputSchema",
+                        "EventGridSchema",
+                        "EventGridEvent"
+                      ],
+                      "metadata": {
+                        "description": "Optional. The event delivery schema for the event subscription."
+                      }
+                    },
+                    "expirationTimeUtc": {
+                      "type": "string",
+                      "nullable": true,
+                      "metadata": {
+                        "description": "Optional. The expiration time for the event subscription. Format is ISO-8601 (yyyy-MM-ddTHH:mm:ssZ)."
+                      }
+                    },
+                    "filter": {
+                      "type": "object",
+                      "nullable": true,
+                      "metadata": {
+                        "description": "Optional. The filter for the event subscription. (See https://learn.microsoft.com/en-us/azure/templates/microsoft.eventgrid/eventsubscriptions?pivots=deployment-language-bicep#eventsubscriptionfilter for more information)."
+                      }
+                    },
+                    "labels": {
+                      "type": "array",
+                      "nullable": true,
+                      "metadata": {
+                        "description": "Optional. The list of user defined labels."
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "object",
+                      "nullable": true,
+                      "metadata": {
+                        "description": "Optional. The retry policy for events. This can be used to configure the TTL and maximum number of delivery attempts and time to live for events."
+                      }
+                    }
+                  },
+                  "resources": {
+                    "systemTopic": {
+                      "existing": true,
+                      "type": "Microsoft.EventGrid/systemTopics",
+                      "apiVersion": "2023-12-15-preview",
+                      "name": "[parameters('systemTopicName')]"
+                    },
+                    "eventSubscription": {
+                      "type": "Microsoft.EventGrid/systemTopics/eventSubscriptions",
+                      "apiVersion": "2023-12-15-preview",
+                      "name": "[format('{0}/{1}', parameters('systemTopicName'), parameters('name'))]",
+                      "properties": {
+                        "deadLetterDestination": "[parameters('deadLetterDestination')]",
+                        "deadLetterWithResourceIdentity": "[parameters('deadLetterWithResourceIdentity')]",
+                        "deliveryWithResourceIdentity": "[parameters('deliveryWithResourceIdentity')]",
+                        "destination": "[if(empty(parameters('deliveryWithResourceIdentity')), parameters('destination'), null())]",
+                        "eventDeliverySchema": "[parameters('eventDeliverySchema')]",
+                        "expirationTimeUtc": "[coalesce(parameters('expirationTimeUtc'), '')]",
+                        "filter": "[coalesce(parameters('filter'), createObject())]",
+                        "labels": "[coalesce(parameters('labels'), createArray())]",
+                        "retryPolicy": "[parameters('retryPolicy')]"
+                      }
+                    }
+                  },
+                  "outputs": {
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the event subscription."
+                      },
+                      "value": "[parameters('name')]"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The resource ID of the event subscription."
+                      },
+                      "value": "[resourceId('Microsoft.EventGrid/systemTopics/eventSubscriptions', parameters('systemTopicName'), parameters('name'))]"
+                    },
+                    "resourceGroupName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the resource group the event subscription was deployed into."
+                      },
+                      "value": "[resourceGroup().name]"
+                    },
+                    "location": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The location the resource was deployed into."
+                      },
+                      "value": "[reference('systemTopic', '2023-12-15-preview', 'full').location]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "systemTopic"
+              ]
+            }
+          },
+          "outputs": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the event grid system topic."
+              },
+              "value": "[parameters('name')]"
+            },
+            "resourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the event grid system topic."
+              },
+              "value": "[resourceId('Microsoft.EventGrid/systemTopics', parameters('name'))]"
+            },
+            "resourceGroupName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the resource group the event grid system topic was deployed into."
+              },
+              "value": "[resourceGroup().name]"
+            },
+            "systemAssignedMIPrincipalId": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "The principal ID of the system assigned identity."
+              },
+              "value": "[tryGet(tryGet(reference('systemTopic', '2023-12-15-preview', 'full'), 'identity'), 'principalId')]"
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location the resource was deployed into."
+              },
+              "value": "[reference('systemTopic', '2023-12-15-preview', 'full').location]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "storage"
+      ]
+    },
     "storageDataOwnerResourceGroupRoleAssignment": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
@@ -54549,8 +54492,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54652,8 +54595,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54755,8 +54698,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54858,8 +54801,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -54961,8 +54904,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -55064,8 +55007,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -55167,8 +55110,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -55276,8 +55219,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.46.1.21595",
-              "templateHash": "2199918868967323409"
+              "version": "0.38.33.27573",
+              "templateHash": "12879796914993589179"
             }
           },
           "definitions": {
@@ -65948,6 +65891,14 @@
     "FUNCTION_STORAGE_ACCOUNT": {
       "type": "string",
       "value": "[reference('procFuncStorage').outputs.name.value]"
+    },
+    "BRONZE_SYSTEM_TOPIC_NAME": {
+      "type": "string",
+      "value": "[variables('bronzeSystemTopicName')]"
+    },
+    "BRONZE_CONTAINER_NAME": {
+      "type": "string",
+      "value": "bronze"
     }
   }
 }

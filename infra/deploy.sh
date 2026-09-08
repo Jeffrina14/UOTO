@@ -58,7 +58,7 @@ VM_USER_PASSWORD="${VM_USER_PASSWORD:-}"
 
 # Feature flags
 AI_VISION_ENABLED="${AI_VISION_ENABLED:-false}"
-AOAI_MULTI_MODAL="${AOAI_MULTI_MODAL:-true}"
+AOAI_MULTI_MODAL="${AOAI_MULTI_MODAL:-false}"
 
 # Function App settings
 FUNCTION_APP_HOST_PLAN="${FUNCTION_APP_HOST_PLAN:-FlexConsumption}"  # FlexConsumption or Dedicated
