@@ -63,8 +63,6 @@ Return strict JSON only with exactly these fields:
 page_roles must contain one role per supplied image, using only:
 academic-result-page, current-course-page, letter, certificate, grading-legend,
 translation, duplicate-translation, blank-or-irrelevant, unknown.
-Also identify whether an official English translation is confidently present. Preserve
-all pages unless duplicate-translation is confirmed.
 """.strip()
 
 
@@ -221,36 +219,6 @@ def _format_extraction_context(classification):
         "use the confirmed official English page values while preserving all source "
         "languages; otherwise do not translate or replace original-language values."
     )
-
-
-def _format_profile_guidance(classification):
-    document_type = (classification or {}).get("document_type", "unknown")
-    guidance = {
-        "report": "This is a report/bulletin. Preserve local grading scales, periods, comments, and missing course codes.",
-        "predicted-results": "This is a predicted-results document. Preserve predicted wording and do not treat it as a final result.",
-        "current-course-list": "This is a current-course document. Course mentions without visible results are not result rows; grades may be null.",
-        "letter": "This is a letter. Do not create course rows from prose; extract rows only from an actual visible results table.",
-        "certificate": "This is a certificate. Do not create course rows unless actual result rows are visibly present.",
-        "transcript": "This is a transcript. Preserve the local institution, session, level, code, grade, credit, and notes conventions.",
-    }
-    return "\n\nProfile guidance:\n" + guidance.get(
-        document_type,
-        "Unknown format: preserve visible values and valid nulls without jurisdiction-specific assumptions.",
-    )
-
-
-def _select_extraction_images(base64_images, classification):
-    roles = (classification or {}).get("page_roles", [])
-    if not (classification or {}).get("official_translation_detected"):
-        return base64_images
-    if len(roles) != len(base64_images):
-        return base64_images
-    if "duplicate-translation" not in roles:
-        return base64_images
-    return [
-        image for image, role in zip(base64_images, roles)
-        if role != "duplicate-translation"
-    ] or base64_images
 
 
 def _is_confident_ontario(classification):
@@ -763,11 +731,7 @@ def run(blob_input: dict):
 
     prompt_json = load_prompts()
     classification = _classify_document_pages(base64_images, instance_id)
-    document_context = (
-        _format_extraction_context(classification)
-        + _format_profile_guidance(classification)
-    )
-    base64_images = _select_extraction_images(base64_images, classification)
+    document_context = _format_extraction_context(classification)
     user_prompt = prompt_json["user_prompt"]
     if (
         _table_cropping_enabled()
