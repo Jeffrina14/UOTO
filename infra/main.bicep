@@ -67,7 +67,7 @@ var _vmUserName = !empty(vmUserName) ? vmUserName : 'adp-user'
 
 
 @allowed([false, true])
-param multiModal bool = false
+param multiModal bool = true
 var _multiModal = multiModal
 
 @allowed([false, true])
@@ -373,6 +373,10 @@ var appSettings = [
   {
     name: 'PROMPT_FILE'
     value: 'prompts.yaml'
+  }
+  {
+    name: 'AOAI_MULTI_MODAL'
+    value: 'true'
   }
   {
     name: 'OPENAI_API_VERSION'
@@ -1205,21 +1209,6 @@ module processingFunctionApp 'br/public:avm/res/web/site:0.16.0' = {
   }
 }
 
-// Event Grid System Topic for bronze container blob events
-// This must be created in Bicep (not auto-created) for reliable Event Grid subscription creation
-// The Event Subscription is created in postDeploy.ps1/sh after the function code is deployed
-var bronzeSystemTopicName = 'bronze-storage-topic-${suffix}'
-module bronzeEventGridTopic 'br/public:avm/res/event-grid/system-topic:0.6.1' = {
-  name: 'bronzeEventGridTopic'
-  params: {
-    name: bronzeSystemTopicName
-    location: location
-    tags: tags
-    source: storage.outputs.id
-    topicType: 'Microsoft.Storage.StorageAccounts'
-  }
-}
-
 resource storageContributorRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-preview' existing = {
   // scope: resourceGroup
   name: roles.storage.storageAccountContributor
@@ -1646,10 +1635,6 @@ output COSMOS_DB_ACCOUNT_NAME string = cosmos.outputs.accountName
 output COSMOS_DB_URI string = 'https://${cosmosAccountName}.documents.azure.com:443/'
 output COSMOS_DB_DATABASE_NAME string = cosmos.outputs.databaseName
 output FUNCTION_STORAGE_ACCOUNT string = procFuncStorage.outputs.name
-
-// Event Grid outputs for postDeploy script
-output BRONZE_SYSTEM_TOPIC_NAME string = bronzeSystemTopicName
-output BRONZE_CONTAINER_NAME string = 'bronze'
 
 // Resue details
 @description('Settings to define reusable resources.')
