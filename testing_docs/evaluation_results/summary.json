@@ -1,0 +1,64 @@
+{
+  "total_files": 9,
+  "successful_files": 0,
+  "failed_files": 9,
+  "files_needing_review": 0,
+  "document_types": {},
+  "per_field_mismatch_counts": {},
+  "documents": [
+    {
+      "source_file": "Case A - 1. ON HS Transcript.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 6.398,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "Case A - 2. US PS Transcript.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 5.228,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "Case A - 3. UK PS Transcript KCL.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 7.663,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "Case A - 4. UK PS List of current courses UAL.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 5.241,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "Case B - 1. Ukraine HS Transcript.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 7.155,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "Case B - 2. Ukraine PS Transcript (2 universities).de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 8.887,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "EBF - 1013796064 - Transcript.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 6.321,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "EBF - 1013910127 - Current Transcript.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 5.257,
+      "error_category": "Exception"
+    },
+    {
+      "source_file": "EBF - 1013910127 - Previous Transcript.de_identified.pdf",
+      "status": "failed",
+      "elapsed_seconds": 6.536,
+      "error_category": "Exception"
+    }
+  ]
+}

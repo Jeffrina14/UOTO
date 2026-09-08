@@ -11,7 +11,17 @@ OPENAI_MODEL = config.get_value("OPENAI_MODEL")
 OPENAI_API_VERSION = config.get_value("OPENAI_API_VERSION")
 
 
-def run_prompt(pipeline_id, system_prompt, user_prompt):
+class RequestTooLargeError(Exception):
+    """Raised when an Azure OpenAI request exceeds the request-size limit."""
+
+
+def run_prompt(
+    pipeline_id,
+    system_prompt,
+    user_prompt,
+    base64_images=None,
+    log_interaction=True,
+):
     token_provider = get_bearer_token_provider(  
         config.credential,  
         "https://cognitiveservices.azure.com/.default"  
@@ -25,17 +35,31 @@ def run_prompt(pipeline_id, system_prompt, user_prompt):
         azure_endpoint =OPENAI_API_BASE
     )
 
-    logging.info(f"User Prompt: {user_prompt}")
-    logging.info(f"System Prompt: {system_prompt}")
+    if log_interaction:
+        logging.info(f"User Prompt: {user_prompt}")
+        logging.info(f"System Prompt: {system_prompt}")
 
-    save_chat_message(pipeline_id, "system", system_prompt)
-    save_chat_message(pipeline_id, "user", user_prompt)
+        save_chat_message(pipeline_id, "system", system_prompt)
+        save_chat_message(pipeline_id, "user", user_prompt)
 
     try:
+        if base64_images:
+            user_content = [{"type": "text", "text": user_prompt}]
+            user_content.extend(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{image}"}
+                }
+                for image in base64_images
+            )
+            user_message = {"role": "user", "content": user_content}
+        else:
+            user_message = {"role": "user", "content": user_prompt}
+
         response = openai_client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{ "role": "system", "content": system_prompt},
-                {"role":"user","content":user_prompt}])
+                user_message])
         assistant_msg = response.choices[0].message.content
         usage = {
             "prompt_tokens":   response.usage.prompt_tokens,
@@ -44,11 +68,15 @@ def run_prompt(pipeline_id, system_prompt, user_prompt):
             "model":           response.model
         }
 
-        # 2) log the assistant’s response + usage
-        save_chat_message(pipeline_id, "assistant", assistant_msg, usage)
+        if log_interaction:
+            save_chat_message(pipeline_id, "assistant", assistant_msg, usage)
         return assistant_msg
     
     except Exception as e:
+        if getattr(e, "status_code", None) == 413:
+            raise RequestTooLargeError(
+                "Azure OpenAI request exceeded the allowed size"
+            ) from e
         logging.error(f"Error calling OpenAI API: {e}")
         raise  # Re-raise to allow Durable Functions to retry
 

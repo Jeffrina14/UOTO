@@ -65,7 +65,7 @@ $VmUserPassword = if ($env:VM_USER_PASSWORD) { $env:VM_USER_PASSWORD } else { ""
 
 # Feature flags
 $AiVisionEnabled = if ($env:AI_VISION_ENABLED) { $env:AI_VISION_ENABLED } else { "false" }
-$AoaiMultiModal = if ($env:AOAI_MULTI_MODAL) { $env:AOAI_MULTI_MODAL } else { "false" }
+$AoaiMultiModal = if ($env:AOAI_MULTI_MODAL) { $env:AOAI_MULTI_MODAL } else { "true" }
 
 # Function App settings
 $FunctionAppHostPlan = if ($env:FUNCTION_APP_HOST_PLAN) { $env:FUNCTION_APP_HOST_PLAN } else { "FlexConsumption" }
