@@ -17,6 +17,12 @@ name = "callAoaiMultiModal"
 bp = df.Blueprint()
 config = Configuration()
 
+
+def normalize_blob_name(container, raw_name):
+    if raw_name.startswith(container + "/"):
+        return raw_name[len(container) + 1:]
+    return raw_name
+
 DOCUMENT_TYPES = {
         "transcript",
         "report",
@@ -215,9 +221,12 @@ def _format_extraction_context(classification):
         "course codes, grades, sessions, and notes, including spaces, punctuation, "
         "A-/A+/W/P, numeric or comma-decimal grades, and local session formats. "
         "Do not globally convert characters, dates, levels, grades, compulsory "
-        "markers, codes, or translations. If official_translation_detected is true, "
-        "use the confirmed official English page values while preserving all source "
-        "languages; otherwise do not translate or replace original-language values."
+        "markers, codes, or structured values. Translate human-readable institution "
+        "names, course levels, course names, and notes into English when reliable. "
+        "If translation is uncertain, keep the original-language value in that same "
+        "field rather than returning null. Prefer confirmed official English page "
+        "values when available. Return exactly one value per schema field; never add "
+        "parallel original or English fields."
     )
 
 
@@ -726,7 +735,10 @@ def run(blob_input: dict):
     container = blob_input.get('container')
     instance_id = blob_input.get('instance_id', '')
 
-    blob_content = get_blob_content(container_name=container, blob_path=blob_name)
+    blob_content = get_blob_content(
+        container_name=container,
+        blob_path=normalize_blob_name(container, blob_name),
+    )
     base64_images = convert_to_base64_images(blob_input, blob_content)
 
     prompt_json = load_prompts()

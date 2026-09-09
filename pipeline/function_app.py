@@ -140,7 +140,11 @@ def process_blob(context):
             "callAoaiMultiModal", retry_options, aoai_input
         )
         validated_multimodal_result = parse_transcript_response(raw_multimodal_result)
-        final_result = json.dumps(validated_multimodal_result, ensure_ascii=False)
+        final_result = json.dumps(
+            validated_multimodal_result,
+            ensure_ascii=False,
+            indent=2,
+        )
 
 
     elif config.get_value("AI_VISION_ENABLED", "false").lower() == "true":
