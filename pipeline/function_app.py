@@ -20,6 +20,7 @@ FINAL_OUTPUT_CONTAINER = config.get_value("FINAL_OUTPUT_CONTAINER")
 app = df.DFApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 
+# Shared handler for blob triggers.
 async def _handle_blob_trigger(
     blob: func.InputStream,
     client: df.DurableOrchestrationClient,
@@ -40,6 +41,7 @@ async def _handle_blob_trigger(
     logging.info(f"Started orchestration {instance_id} for blob {blob.name}")
 
 
+# Production: polling-based blob trigger
 @app.function_name(name="start_orchestrator_on_blob")
 @app.blob_trigger(
     arg_name="blob",
@@ -138,7 +140,11 @@ def process_blob(context):
             "callAoaiMultiModal", retry_options, aoai_input
         )
         validated_multimodal_result = parse_transcript_response(raw_multimodal_result)
-        final_result = json.dumps(validated_multimodal_result, ensure_ascii=False)
+        final_result = json.dumps(
+            validated_multimodal_result,
+            ensure_ascii=False,
+            indent=2,
+        )
 
 
     elif config.get_value("AI_VISION_ENABLED", "false").lower() == "true":

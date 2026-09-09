@@ -179,6 +179,16 @@ class MultimodalChunkingTests(unittest.TestCase):
         self.assertIn('"document_type": "letter"', prompts[0])
         self.assertIn("course mentions outside result tables", prompts[0])
 
+    def test_translation_context_uses_original_value_as_fallback(self):
+        context = self.activity._format_extraction_context({
+            "document_type": "transcript",
+            "source_languages": ["Ukrainian"],
+            "page_roles": ["academic-result-page"],
+        })
+        self.assertIn("Translate human-readable institution", context)
+        self.assertIn("keep the original-language value", context)
+        self.assertIn("never add parallel original or English fields", context)
+
     def test_single_institution_context_fills_missing_course_institution(self):
         result = self.activity._normalize_transcript_result(
             {"courses": [{"course_name": "English", "institution": None}]},

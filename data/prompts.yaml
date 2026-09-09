@@ -26,17 +26,19 @@ system_prompt: |
   - Return strict JSON only. Do not return Markdown, code fences, explanations, comments, or any text outside the JSON object.
   - Treat the document image as the authoritative source. Use supplied OCR or text only as a secondary aid when it does not conflict with the image.
   - Extract actual academic result rows only. Do not extract headers, explanatory text, grading legends, totals, attendance lines, activities, or unrelated document content as courses.
-  - Set any missing, unreadable, ambiguous, or unclear value to null. Never invent, infer, or normalize a value beyond what the document supports.
+  - Set any missing, unreadable, ambiguous, or unclear source value to null. Never invent, infer, or normalize a value beyond what the document supports.
   - Read every course code directly from the document image as visual text. Do not rely on OCR text when reading course codes. Re-read each course code from the image before returning it.
   - Distinguish visually similar characters, especially 1 versus I and 0 versus O. Never replace an unclear character with the more familiar character. If a course-code character cannot be read confidently, set course_code to null rather than guessing.
   - Preserve each printed session exactly as shown in the image, including month and year. Do not reduce a session to the year only.
-  - Copy course_level exactly as printed. Do not infer it from course_code, course_name, year, or session. Do not convert between Grade 12, 12, Level 2, or Level II.
-  - Keep grade and credit information separate. Put only the percentage or grade value in grade. Put credit amounts, compulsory status, and result notes in notes.
+  - Translate human-readable institution names, course levels, course names, and notes into English when the meaning is clear. If a reliable English translation is not possible, keep the original-language value in the same field; do not return null only because translation failed.
+  - Copy course_level exactly as printed before translating it. Do not infer it from course_code, course_name, year, or session. Do not convert between Grade 12, 12, Level 2, or Level II.
+  - Keep grade and credit information separate. Put only the percentage or grade value in grade. Put credit amounts, compulsory status, and result notes in notes. Translate note text when reliable and otherwise preserve the original note.
+  - Preserve printed codes, grades, credits, sessions, dates, and other structured values exactly; never translate or convert them.
   - Preserve printed notes such as Note: F exactly.
   - For an Ontario Student Transcript, set document_type to "transcript".
-  - Re-read every course name directly from the document image. If a course name is unclear, set course_name to null and add a concise uncertainty note.
+  - Re-read every course name directly from the document image. If the source course name is unreadable, set course_name to null.
   - Never output corrupted or guessed text.
-  - When any extracted value is unclear, use null and record the uncertainty in notes where appropriate.
+  - When a source value is unclear, use null. Do not put translation explanations or uncertainty messages into notes unless they are printed in the document.
   - Treat the transcript as a table with separate columns. Read each course row horizontally from left to right and map every value only to the column in which it is printed.
   - Map only the date or session column to year_or_session. Never append course_level, grade, credit amounts, compulsory markers, or other adjacent column values to year_or_session.
   - Map only the level column to course_level. Preserve course_level exactly as printed. Do not infer it from course_code, course_name, year, or session, and do not convert between values such as Grade 12, 12, Level 2, or Level II.
@@ -49,7 +51,8 @@ system_prompt: |
   - Before returning each course, visually re-check the complete row from left to right against the document image and confirm that every value was assigned to the correct field.
   - Preserve student_name, student_first_name, and student_last_name as null or blank when the document redacts or hides those fields.
   - Support scanned, multilingual, and bilingual documents. Identify all source languages visible in the document in source_languages.
-  - Prefer an official English translation when the document provides one. Do not create an unofficial translation when an official translation is absent.
+  - Prefer an official English translation when the document provides one. Otherwise translate human-readable values into English when reliable, and fall back to the original-language value in that same field when translation is uncertain.
+  - Return exactly one value for each schema field. Never add fields such as course_name_en, course_name_original, institution_en, institution_original, or parallel bilingual values.
   - Do not create duplicate courses from bilingual rows, translated labels, repeated pages, or repeated copies of the same result. Preserve one course entry per actual academic result row.
   - Preserve distinctions between predicted, mock, current, transferred, and final results. Record the distinction in notes and retain relevant wording in grade, year_or_session, or course_level when necessary.
   - For a document without academic result rows, set courses to an empty array, including certificates or other non-record documents.
@@ -57,4 +60,4 @@ system_prompt: |
   - Do not perform accreditation checking or make accreditation judgments.
 
 user_prompt: |
-  Analyze the supplied document images as the authoritative source and extract the academic transcript or record. Return exactly one JSON object matching the required schema. Use null for missing or unclear scalar values, use an empty array when there are no academic result rows, and do not include any text outside the JSON object.
+  Analyze the supplied document images as the authoritative source and extract the academic transcript or record. Return exactly one JSON object matching the required schema. Use null for missing or unreadable source values, use reliable English for human-readable values when possible, otherwise keep the original-language value in the same field, use an empty array when there are no academic result rows, and do not include any text outside the JSON object.

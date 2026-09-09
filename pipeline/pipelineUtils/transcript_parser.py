@@ -152,8 +152,13 @@ def parse_transcript_response(raw_response: str) -> dict:
     if not isinstance(parsed, dict):
         raise ValueError("Transcript response top-level value must be a JSON object")
 
-    result = dict(TOP_LEVEL_DEFAULTS)
-    result.update(parsed)
+    result = {
+        key: parsed[key]
+        for key in TOP_LEVEL_DEFAULTS
+        if key in parsed
+    }
+    for key, default in TOP_LEVEL_DEFAULTS.items():
+        result.setdefault(key, default.copy() if isinstance(default, list) else default)
 
     for key in (
         "student_name",

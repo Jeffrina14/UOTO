@@ -20,6 +20,14 @@ class TranscriptParserTests(unittest.TestCase):
             "notes",
         })
 
+    def test_extra_bilingual_fields_are_removed(self):
+        result = parse_transcript_response(
+            '{"course_name_en":"History", "courses":[{"course_name":"History",'
+            '"course_name_original":"Історія"}]}'
+        )
+        self.assertNotIn("course_name_en", result)
+        self.assertNotIn("course_name_original", result["courses"][0])
+
     def test_fenced_json(self):
         result = parse_transcript_response(
             '```json\n{"document_type":"transcript"}\n```'
