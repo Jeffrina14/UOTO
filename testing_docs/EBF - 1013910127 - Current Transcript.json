@@ -1,0 +1,76 @@
+{
+  "student_name": "",
+  "student_first_name": "",
+  "student_last_name": "",
+  "document_issue_date": null,
+  "source_languages": [
+    "French"
+  ],
+  "document_type": "report",
+  "is_academic_record": true,
+  "courses": [
+    {
+      "institution": "Lycée ACADOMIA, campus Tony Parker Adéquat Academy",
+      "year_or_session": "2025/2026 - 2nd Trimester",
+      "course_level": "Terminale Générale",
+      "course_name": "English LV1",
+      "course_code": null,
+      "grade": "15,81",
+      "notes": "Rank: 4/9; Class average: 16,36; Teacher: Marchetto; Appreciation: A satisfactory trimester and serious work. I expect a bit more participation as you have the capacity."
+    },
+    {
+      "institution": "Lycée ACADOMIA, campus Tony Parker Adéquat Academy",
+      "year_or_session": "2025/2026 - 2nd Trimester",
+      "course_level": "Terminale Générale",
+      "course_name": "Scientific Education",
+      "course_code": null,
+      "grade": "16,00",
+      "notes": "Rank: 6/9; Class average: 16,38; Teacher: Tarpin; Appreciation: Very good general level and good understanding of expectations. Regular training that bears fruit."
+    },
+    {
+      "institution": "Lycée ACADOMIA, campus Tony Parker Adéquat Academy",
+      "year_or_session": "2025/2026 - 2nd Trimester",
+      "course_level": "Terminale Générale",
+      "course_name": "Spanish LV2",
+      "course_code": null,
+      "grade": "12,87",
+      "notes": "Rank: 6/8; Class average: 15,46; Teacher: Samperé Volta; Appreciation: Good work, serious, but too discreet."
+    },
+    {
+      "institution": "Lycée ACADOMIA, campus Tony Parker Adéquat Academy",
+      "year_or_session": "2025/2026 - 2nd Trimester",
+      "course_level": "Terminale Générale",
+      "course_name": "History, Geography / Moral & Civic Education",
+      "course_code": null,
+      "grade": "11,50",
+      "notes": "Rank: 7/9; Class average: 13,64; Teacher: Varela de Pina; Appreciation: Serious work. But more participation would be welcome."
+    },
+    {
+      "institution": "Lycée ACADOMIA, campus Tony Parker Adéquat Academy",
+      "year_or_session": "2025/2026 - 2nd Trimester",
+      "course_level": "Terminale Générale",
+      "course_name": "Philosophy",
+      "course_code": null,
+      "grade": "11,33",
+      "notes": "Rank: 7/9; Class average: 12,74; Teacher: Lefebvre; Appreciation: Too discreet in class, more investment in work is needed."
+    },
+    {
+      "institution": "Lycée ACADOMIA, campus Tony Parker Adéquat Academy",
+      "year_or_session": "2025/2026 - 2nd Trimester",
+      "course_level": "Terminale Générale",
+      "course_name": "Specialized Mathematics",
+      "course_code": null,
+      "grade": "11,86",
+      "notes": "Rank: 4/6; Class average: 13,37; Teacher: Bussolotto; Appreciation: A slightly just trimester, slight decrease. More participation in class is welcome!!"
+    },
+    {
+      "institution": "Lycée ACADOMIA, campus Tony Parker Adéquat Academy",
+      "year_or_session": "2025/2026 - 2nd Trimester",
+      "course_level": "Terminale Générale",
+      "course_name": "Specialized Physics and Chemistry",
+      "course_code": null,
+      "grade": "12,15",
+      "notes": "Rank: 5/5; Class average: 15,22; Teacher: Picard; Appreciation: Progress this trimester, Ismaël understands more and more the expectations of the baccalaureate. More personal work is still needed as there is still room for improvement."
+    }
+  ]
+}
