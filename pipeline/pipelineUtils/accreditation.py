@@ -127,6 +127,21 @@ def extract_institutions(transcript, limit=None):
             "website": None,
         })
 
+    for value in transcript.get("institution_context") or []:
+        if not isinstance(value, str):
+            continue
+        name = " ".join(value.split())
+        key = name.lower()
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        institutions.append({
+            "name": name,
+            "location": None,
+            "country": None,
+            "website": None,
+        })
+
     truncated = False
     if limit is not None and len(institutions) > limit:
         institutions = institutions[:limit]

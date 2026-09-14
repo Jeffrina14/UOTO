@@ -98,6 +98,17 @@ class ExtractInstitutionsTests(unittest.TestCase):
         self.assertEqual(len(institutions), 2)
         self.assertTrue(truncated)
 
+    def test_falls_back_to_top_level_institution_context(self):
+        institutions, truncated = extract_institutions(
+            {"courses": [{"institution": None}],
+             "institution_context": ["University of Toronto", "McGill University"]}
+        )
+        self.assertEqual(
+            [item["name"] for item in institutions],
+            ["University of Toronto", "McGill University"],
+        )
+        self.assertFalse(truncated)
+
     def test_rejects_non_object_transcript(self):
         with self.assertRaises(ValueError):
             extract_institutions(["courses"])

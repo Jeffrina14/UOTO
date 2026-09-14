@@ -21,6 +21,7 @@ TOP_LEVEL_DEFAULTS = {
     "source_languages": [],
     "document_type": None,
     "is_academic_record": False,
+    "institution_context": [],
     "courses": [],
 }
 
@@ -199,6 +200,17 @@ def parse_transcript_response(raw_response: str) -> dict:
     else:
         result["source_languages"] = [
             _normalize_value(language) for language in source_languages
+        ]
+
+    institution_context = result["institution_context"]
+    if institution_context is None:
+        result["institution_context"] = []
+    elif not isinstance(institution_context, list):
+        raise ValueError("institution_context must be a JSON array")
+    else:
+        result["institution_context"] = [
+            _normalize_value(institution) for institution in institution_context
+            if isinstance(institution, str) and institution.strip()
         ]
 
     courses = result["courses"]
