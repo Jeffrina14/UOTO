@@ -3,7 +3,6 @@ import time
 
 import azure.durable_functions as df
 from openai import OpenAI
-from azure.identity import get_bearer_token_provider
 
 from pipelineUtils.accreditation import (
     ACCREDITATION_DIRECTORIES,
@@ -51,13 +50,13 @@ def _search_pause():
 
 
 def _openai_client():
-    token_provider = get_bearer_token_provider(
-        config.credential, "https://ai.azure.com/.default"
-    )
     endpoint = config.get_value("OPENAI_API_BASE").rstrip("/")
+    token = config.credential.get_token(
+        "https://cognitiveservices.azure.com/.default"
+    ).token
     return OpenAI(
         base_url=f"{endpoint}/openai/v1/",
-        api_key=token_provider,
+        api_key=token,
     )
 
 
@@ -199,8 +198,10 @@ def _search(query):
         )
         return normalize_search_results(_search_sources(response))
     except Exception as error:
-        logging.warning(f"accreditationLookup: search request failed ({type(error).__name__})")
-        return []
+        logging.warning(
+            f"accreditationLookup: search request failed ({type(error).__name__})"
+        )
+        return None
 
 
 @bp.function_name(name)
@@ -214,15 +215,25 @@ def run(args: dict):
         return unverified_result(institution, queries, "The institution name was empty.")
 
     hits = []
+    search_failures = 0
     pause = _search_pause()
     for index, query in enumerate(queries):
-        hits.extend(_search(query))
+        query_hits = _search(query)
+        if query_hits is None:
+            search_failures += 1
+        else:
+            hits.extend(query_hits)
         if pause and index < len(queries) - 1:
             time.sleep(pause)
 
     hits = dedupe_results(hits, limit=_max_results())
     if not hits:
-        return unverified_result(institution, queries, "No search results were returned.")
+        summary = (
+            "The web-search provider failed for all accreditation queries."
+            if search_failures == len(queries)
+            else "No search results were returned."
+        )
+        return unverified_result(institution, queries, summary)
 
     try:
         raw_verdict = run_prompt(
