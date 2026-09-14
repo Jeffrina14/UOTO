@@ -131,6 +131,28 @@ def _normalize_course(course: Any, index: int) -> dict:
     }
 
 
+def parse_json_object(raw_response: str) -> dict:
+    """Parse a model response into a JSON object, tolerating fences and thinking blocks."""
+    if not isinstance(raw_response, str) or not raw_response.strip():
+        raise ValueError("Model response cannot be empty")
+
+    cleaned_response = _remove_thinking_blocks(raw_response)
+    cleaned_response = _remove_json_fences(cleaned_response).strip()
+    if not cleaned_response:
+        raise ValueError("Model response cannot be empty after removing wrappers")
+
+    json_text = _remove_trailing_commas(_extract_outer_object(cleaned_response))
+    try:
+        parsed = json.loads(json_text)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Model response contains malformed JSON: {error.msg}") from error
+
+    if not isinstance(parsed, dict):
+        raise ValueError("Model response top-level value must be a JSON object")
+
+    return parsed
+
+
 def parse_transcript_response(raw_response: str) -> dict:
     if not isinstance(raw_response, str) or not raw_response.strip():
         raise ValueError("Transcript response cannot be empty")

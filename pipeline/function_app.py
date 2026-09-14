@@ -6,9 +6,20 @@ import azure.durable_functions as df
 from azure.durable_functions import RetryOptions
 
 
-from activities import runDocIntel, callAiFoundry, writeToBlob, speechToText, callFoundryMultiModal
+from activities import (
+    runDocIntel,
+    callAiFoundry,
+    writeToBlob,
+    speechToText,
+    callFoundryMultiModal,
+    readTranscriptOutput,
+    accreditationLookup,
+    writeAccreditation,
+    updateAccreditationSummary,
+)
 from configuration import Configuration
 
+from pipelineUtils.accreditation import is_transcript_output_name
 from pipelineUtils.blob_functions import BlobMetadata
 from pipelineUtils.transcript_parser import parse_transcript_response
 
@@ -54,6 +65,36 @@ async def start_orchestrator_blob(
     client: df.DurableOrchestrationClient,
 ):
     await _handle_blob_trigger(blob, client)
+
+
+# Second stage: accreditation research, triggered by completed transcripts.
+@app.function_name(name="start_accreditation_on_silver")
+@app.blob_trigger(
+    arg_name="blob",
+    path="silver/{name}",
+    connection="DataStorage",
+)
+@app.durable_client_input(client_name="client")
+async def start_accreditation_blob(
+    blob: func.InputStream,
+    client: df.DurableOrchestrationClient,
+):
+    if config.get_value("ACCREDITATION_ENABLED", "false").lower() != "true":
+        return
+    if not is_transcript_output_name(blob.name):
+        return
+
+    blob_metadata = BlobMetadata(
+        name=blob.name,
+        container="silver",
+        uri=blob.uri
+    )
+    instance_id = await client.start_new(
+        "process_accreditation", client_input=blob_metadata.to_dict()
+    )
+    logging.info(
+        f"Started accreditation orchestration {instance_id} for blob {blob.name}"
+    )
 
 
 # An HTTP-triggered function with a Durable Functions client binding
@@ -203,8 +244,63 @@ def process_blob(context):
         "task_result": task_result
     }   
 
+
+# Second stage sub orchestrator: silver transcript -> gold accreditation result.
+@app.function_name(name="process_accreditation")
+@app.orchestration_trigger(context_name="context")
+def process_accreditation(context):
+    blob_input = context.get_input()
+    blob_name = blob_input.get("name", "")
+    container = blob_input.get("container", "silver")
+
+    retry_options = RetryOptions(
+        first_retry_interval_in_milliseconds=5000,
+        max_number_of_attempts=3
+    )
+
+    transcript_info = yield context.call_activity_with_retry(
+        "readTranscriptOutput",
+        retry_options,
+        {"blob_name": blob_name, "container": container},
+    )
+
+    institutions = transcript_info.get("institutions") or []
+    lookups = [
+        context.call_activity_with_retry(
+            "accreditationLookup",
+            retry_options,
+            {"institution": institution, "instance_id": context.instance_id},
+        )
+        for institution in institutions
+    ]
+    results = (yield context.task_all(lookups)) if lookups else []
+
+    write_result = yield context.call_activity_with_retry(
+        "writeAccreditation",
+        retry_options,
+        {
+            "blob_name": blob_name,
+            "institutions": results,
+            "truncated": transcript_info.get("truncated", False),
+        },
+    )
+    summary_result = yield context.call_activity_with_retry(
+        "updateAccreditationSummary", retry_options, {}
+    )
+
+    return {
+        "blob": blob_input,
+        "institution_count": len(results),
+        "write_result": write_result,
+        "summary_result": summary_result,
+    }
+
 app.register_functions(runDocIntel.bp)
 app.register_functions(callAiFoundry.bp)
 app.register_functions(writeToBlob.bp)
 app.register_functions(speechToText.bp)
 app.register_functions(callFoundryMultiModal.bp)
+app.register_functions(readTranscriptOutput.bp)
+app.register_functions(accreditationLookup.bp)
+app.register_functions(writeAccreditation.bp)
+app.register_functions(updateAccreditationSummary.bp)

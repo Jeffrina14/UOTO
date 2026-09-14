@@ -420,6 +420,42 @@ var appSettings = [
     name: 'FINAL_OUTPUT_CONTAINER'
     value: 'silver'
   }
+  {
+    name: 'ACCREDITATION_ENABLED'
+    value: 'false'
+  }
+  {
+    name: 'ACCREDITATION_OUTPUT_CONTAINER'
+    value: 'gold'
+  }
+  {
+    name: 'ACCREDITATION_SEARCH_URL'
+    value: ''
+  }
+  {
+    name: 'ACCREDITATION_SEARCH_PROVIDER'
+    value: 'azure_openai_web_search'
+  }
+  {
+    name: 'ACCREDITATION_MAX_RESULTS'
+    value: '8'
+  }
+  {
+    name: 'ACCREDITATION_TIMEOUT'
+    value: '30'
+  }
+  {
+    name: 'ACCREDITATION_SEARCH_PAUSE'
+    value: '0.3'
+  }
+  {
+    name: 'ACCREDITATION_MAX_INSTITUTIONS'
+    value: '25'
+  }
+  {
+    name: 'ACCREDITATION_SUMMARY_ENABLED'
+    value: 'true'
+  }
 ]
 
 module vaultDnsZone './modules/network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse && empty(_azureReuseConfig.existingKeyVaultPrivateDnsZoneResourceId)) {
