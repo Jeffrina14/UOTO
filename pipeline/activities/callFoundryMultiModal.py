@@ -14,6 +14,8 @@ except ImportError:
 from pipelineUtils.blob_functions import get_blob_content
 from pipelineUtils.azure_openai import RequestTooLargeError, run_prompt
 from pipelineUtils.transcript_parser import (
+    EXTRA_COURSE_KEYS,
+    EXTRA_TOP_LEVEL_KEYS,
     IncompleteJSONError,
     parse_transcript_response,
 )
@@ -450,6 +452,16 @@ def _merge_transcript_results(results):
         merged["is_academic_record"] = (
             merged["is_academic_record"] or result.get("is_academic_record", False)
         )
+        for key in EXTRA_TOP_LEVEL_KEYS:
+            value = result.get(key)
+            if value not in (None, "", [], {}):
+                if key == "institution_context":
+                    merged.setdefault(key, [])
+                    for item in value:
+                        if item not in merged[key]:
+                            merged[key].append(item)
+                elif key not in merged or merged[key] in (None, "", [], {}):
+                    merged[key] = value
         for course in result.get("courses", []):
             identity = _course_identity(course)
             if identity not in seen_courses:
@@ -702,7 +714,7 @@ def _extract_chunked_transcript(
                     "course_code",
                     "grade",
                     "notes",
-                )}
+                ) + EXTRA_COURSE_KEYS if key in course}
                 for course in indexed_courses
             ]
             chunk_results.append(first_pass_result)

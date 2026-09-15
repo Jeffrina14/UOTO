@@ -13,6 +13,28 @@ COURSE_KEYS = (
     "notes",
 )
 
+EXTRA_COURSE_KEYS = (
+    "period",
+    "credits",
+    "status",
+    "parent_course_name",
+    "reported_grades",
+    "reported_credits",
+    "reported_attributes",
+)
+
+EXTRA_TOP_LEVEL_KEYS = (
+    "page_type",
+    "fields",
+    "totals",
+    "other",
+    "summaries",
+    "academic_summary_rows",
+    "document_fields",
+    "other_information",
+    "institution_context",
+)
+
 TOP_LEVEL_DEFAULTS = {
     "student_name": None,
     "student_first_name": None,
@@ -126,10 +148,14 @@ def _normalize_course(course: Any, index: int) -> dict:
     if not isinstance(course, dict):
         raise ValueError(f"Course row at index {index} must be a JSON object")
 
-    return {
+    normalized = {
         key: _normalize_value(course.get(key))
         for key in COURSE_KEYS
     }
+    for key in EXTRA_COURSE_KEYS:
+        if key in course:
+            normalized[key] = course[key]
+    return normalized
 
 
 def parse_json_object(raw_response: str) -> dict:
@@ -180,6 +206,9 @@ def parse_transcript_response(raw_response: str) -> dict:
         for key in TOP_LEVEL_DEFAULTS
         if key in parsed
     }
+    for key in EXTRA_TOP_LEVEL_KEYS:
+        if key in parsed:
+            result[key] = parsed[key]
     for key, default in TOP_LEVEL_DEFAULTS.items():
         result.setdefault(key, default.copy() if isinstance(default, list) else default)
 
