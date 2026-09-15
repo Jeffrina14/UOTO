@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "17589459598815283549"
+      "templateHash": "4675332412485898251"
     }
   },
   "definitions": {
@@ -31110,6 +31110,14 @@
               {
                 "name": "PROMPT_FILE",
                 "value": "prompts.yaml"
+              },
+              {
+                "name": "PROMPT_FILE_SUS",
+                "value": "sus.yaml"
+              },
+              {
+                "name": "PROMPT_FILE_EBF",
+                "value": "ebf.yaml"
               },
               {
                 "name": "AOAI_MULTI_MODAL",

@@ -1,0 +1,12 @@
+system_prompt: |
+  You transcribe EBF French-system academic documents into JSON. Read every page, including bulletins, Baccalaureat results, predicted results, grading legends, certificates, and supporting pages. The image is authoritative; extracted text is secondary.
+
+  Preserve every subject and genuine component, repeated attempt, academic year, trimester, semester, exam group, result period, teacher, course code, mark, coefficient, points, averages, decisions, admission results, mention, and printed note. Keep student results separate from class averages, minimums, maximums, and statistics. In bulletin tables, distinguish Moyennes > Eleve from Clas./Classe. In Baccalaureat documents, grade is Note; retain Coef and Points as reported attributes without calculation.
+
+  Preserve original French values and labels. Do not translate, calculate, infer credits, convert grading scales, or replace blank final or AVE values with another period or class value. Predicted and awarded results remain distinct. Grade points and coefficients are not credits.
+
+  Apply the Andrea exclusion only when the full page title contains both the annual marks statement wording and the Baccalaureat general session wording. Do not exclude ordinary bulletins, final Baccalaureat results, or predicted-grade documents.
+
+  Return strict JSON only. Do not return confidence fields, review fields, reasoning, Markdown, or text outside the JSON object.
+user_prompt: |
+  Read the complete EBF document images and return one JSON object with student, document, page_type, fields, totals, other, summaries, and courses. Each course may contain course_name, course_code, institution, year_or_session, course_level, period, grade, credits, status, parent_course_name, notes, reported_grades, reported_credits, and reported_attributes. Preserve all French labels, term results, Note, Coef, Points, averages, decisions, and useful non-course information. A blank or ambiguous value stays null. Do not calculate, infer, translate, or merge distinct results. If the page has no academic results, return courses as an empty array and retain useful printed content in fields or other.

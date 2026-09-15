@@ -375,6 +375,14 @@ var appSettings = [
     value: 'prompts.yaml'
   }
   {
+    name: 'PROMPT_FILE_SUS'
+    value: 'sus.yaml'
+  }
+  {
+    name: 'PROMPT_FILE_EBF'
+    value: 'ebf.yaml'
+  }
+  {
     name: 'AOAI_MULTI_MODAL'
     value: 'true'
   }

@@ -21,6 +21,7 @@ from configuration import Configuration
 
 from pipelineUtils.accreditation import is_transcript_output_name
 from pipelineUtils.blob_functions import BlobMetadata
+from pipelineUtils.document_profiles import profile_for_blob
 from pipelineUtils.transcript_parser import parse_transcript_response
 
 config = Configuration()
@@ -46,6 +47,7 @@ async def _handle_blob_trigger(
         container="bronze",
         uri=blob.uri
     )
+    blob_metadata.profile = profile_for_blob(blob.name)
     logging.info(f"Blob Metadata: {blob_metadata}")
     logging.info(f"Blob Metadata JSON: {blob_metadata.to_dict()}")
     instance_id = await client.start_new("process_blob", client_input=blob_metadata.to_dict())
@@ -87,7 +89,8 @@ async def start_accreditation_blob(
     blob_metadata = BlobMetadata(
         name=blob.name,
         container="silver",
-        uri=blob.uri
+        uri=blob.uri,
+        profile=profile_for_blob(blob.name),
     )
     instance_id = await client.start_new(
         "process_accreditation", client_input=blob_metadata.to_dict()
@@ -124,7 +127,8 @@ async def start_orchestrator_http(req: func.HttpRequest, client):
     blob_input = {
         "name": blob_name,
         "container": "bronze",
-        "uri": blob_uri
+        "uri": blob_uri,
+        "profile": profile_for_blob(blob_name),
     }
 
     #invoke the process_blob function with the list of blobs
@@ -174,13 +178,18 @@ def process_blob(context):
             "name": blob_input.get("name"),
             "container": blob_input.get("container"),
             "uri": blob_input.get("uri"),
-            "instance_id": sub_orchestration_id
+            "instance_id": sub_orchestration_id,
+            "profile": blob_input.get("profile", profile_for_blob(blob_name)),
         }
 
         raw_multimodal_result = yield context.call_activity_with_retry(
             "callAoaiMultiModal", retry_options, aoai_input
         )
         validated_multimodal_result = parse_transcript_response(raw_multimodal_result)
+        validated_multimodal_result["processing"] = {
+            "profile": blob_input.get("profile", profile_for_blob(blob_name)),
+            "routing_source": "filename",
+        }
         final_result = json.dumps(
             validated_multimodal_result,
             ensure_ascii=False,

@@ -4,7 +4,13 @@ import json
 import os
 import re
 import fitz
-from pipelineUtils.prompts import load_prompts
+try:
+    from pipelineUtils.prompts import load_profile_prompts
+except ImportError:
+    from pipelineUtils.prompts import load_prompts
+
+    def load_profile_prompts(profile):
+        return load_prompts()
 from pipelineUtils.blob_functions import get_blob_content
 from pipelineUtils.azure_openai import RequestTooLargeError, run_prompt
 from pipelineUtils.transcript_parser import (
@@ -741,7 +747,7 @@ def run(blob_input: dict):
     )
     base64_images = convert_to_base64_images(blob_input, blob_content)
 
-    prompt_json = load_prompts()
+    prompt_json = load_profile_prompts(blob_input.get("profile", "UNKNOWN"))
     classification = _classify_document_pages(base64_images, instance_id)
     document_context = _format_extraction_context(classification)
     user_prompt = prompt_json["user_prompt"]
