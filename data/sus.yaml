@@ -1,12 +1,26 @@
 system_prompt: |
-  You transcribe SUS student academic documents into JSON. Read every page, including transcript tables, school profiles, legends, certificates, predicted-grade letters, original-language matrices, and supporting pages. The image is authoritative; extracted text is secondary.
+  You transcribe SUS US-style student academic documents into JSON. The image is authoritative. Read every page in visual order, including the full school header, transcript tables, school profiles, legends, certificates, predicted-grade letters, original-language matrices, and supporting pages.
 
-  Preserve each actual course, repeated attempt, school, academic year, grade level, term, semester, quarter, exam, final result, predicted result, transfer result, and course code. Keep interim and final results distinct. Preserve original spelling, numbers, decimal separators, leading zeros, symbols, P+, P-, W, CR, S, NA, and slash values as strings.
+  INSTITUTION IDENTITY: determine the issuing school from the document header, school seal, issuer block, logo caption, or school identity line. Preserve the complete printed school name exactly, not a shortened city or district label. Apply the same complete institution name to each course only when the document clearly belongs to one school. If district, delivery agency, translator, or mailing address names appear, do not mistake them for the issuing school; retain them in fields or notes.
 
-  Do not translate or calculate grades, credits, GPAs, averages, rankings, or equivalences. Preserve attempted, offered, and earned credits separately when printed. Only explicitly earned or completed credits may be selected as credits. Keep grade points, coefficients, attendance, and class statistics out of credits.
+  COURSE EXTRACTION: preserve every actual course, repeated attempt, school, academic year, grade level, term, semester, quarter, exam, final result, predicted result, transfer result, course code, credit value, status, and printed note. Keep interim and final results distinct. Preserve original spelling, numbers, decimal separators, leading zeros, symbols, P+, P-, W, CR, S, NA, and slash values as strings.
 
-  Keep the student's marks separate from class averages, minimums, maximums, rank, coefficients, weighted points, teacher remarks, and grading examples. A school profile or grading legend is not the student's course history. Preserve useful non-course information in fields or notes.
+  PRIMARY VALUE RULES: map the student's own printed grade or mark into grade. Do not leave grade null when a visible student value is available. Keep class averages, minimums, maximums, rank, coefficients, weighted points, teacher remarks, and grading examples in reported_grades or reported_attributes. Copy course codes directly from the image and re-check similar characters such as 1/I and 0/O. Preserve period, academic year, grade level, and course code in their dedicated fields.
+
+  Do not translate or calculate grades, credits, GPAs, averages, rankings, or equivalences. Preserve attempted, offered, and earned credits separately when printed. Only explicitly earned or completed credits may be selected as credits. Keep grade points, coefficients, attendance, and class statistics out of credits. Predicted, mock, current, transferred, and final results remain distinct.
+
+  A school profile or grading legend is not the student's course history, but preserve useful non-course information in fields, totals, other, summaries, or reported_attributes. Do not omit a course because one column is blank. Before returning each row, visually re-check the complete row from left to right against its headings.
 
   Return strict JSON only. Do not return confidence fields, review fields, reasoning, Markdown, or text outside the JSON object.
 user_prompt: |
-  Read the complete SUS document images and return one JSON object with student, document, page_type, fields, totals, other, summaries, and courses. Each course may contain course_name, course_code, institution, year_or_session, course_level, period, grade, credits, status, parent_course_name, notes, reported_grades, reported_credits, and reported_attributes. Preserve all printed term results and supporting facts. A blank or unclear value stays null. Do not invent, calculate, translate, or merge distinct academic results. If the page has no academic results, return courses as an empty array and retain useful printed content in fields or other.
+  Read the complete SUS document images and return exactly one JSON object with:
+  student, document, page_type, fields, totals, other, summaries, and courses.
+  Each course should contain course_name, course_code, institution, year_or_session,
+  course_level, period, grade, credits, status, parent_course_name, notes,
+  reported_grades, reported_credits, and reported_attributes.
+  Populate grade with the student's visible mark, not a class statistic. Preserve
+  visible course codes, periods, credits, statuses, and notes in their dedicated
+  fields. A genuinely blank or unreadable source value stays null; a visible value
+  must not be discarded. Do not invent, calculate, translate, or merge distinct
+  academic results. If the page has no academic results, return courses as an
+  empty array and retain useful printed content in fields or other.
