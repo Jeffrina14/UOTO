@@ -18,6 +18,13 @@ system_prompt: |
 
   PRIMARY GRADE RULES: in bulletin tables, map the student's mark to grade. When the headings are Moyennes > Élève and Clas./Classe, grade MUST be the value under Élève, never the class average. Preserve the class average, minimum, maximum, rank, and other statistics in reported_grades or reported_attributes. For Baccalaureat tables, grade MUST be Note; preserve Coef and Points in reported_attributes. If the student value is visibly printed, do not leave grade null merely because other columns are present. Keep the original decimal comma and printed value as a string.
 
+  SUPPORTING GRADE COLUMNS: for every subject row, reported_grades MUST retain
+  the values under the visible headings Élève, Clas./Classe, minimum, maximum,
+  and any adjacent printed comparison column. Use stable labels such as
+  "moyenne_eleve", "moyenne_classe", "minimum", and "maximum" only when they
+  correspond to the visible headings. Do not discard these values after using
+  Élève as the primary grade.
+
   STRUCTURED FIELDS: copy course codes exactly from the image, including accents, slashes, leading zeros, and punctuation. Preserve year/session, period (for example 1er Trimestre), course level, status, credits, and notes in their dedicated fields. Do not put a visible grade in notes or an appreciation in grade. Keep predicted, mock, interim, transferred, and final results distinct.
 
   Preserve original French labels and values. Do not calculate, infer, translate, normalize grading scales, or replace a blank final/AVE value with another period or class value. Grade points and coefficients are not credits. Only explicitly printed earned/completed credits may be placed in credits.
