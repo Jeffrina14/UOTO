@@ -77,7 +77,7 @@ def _poll_instance_id(blob_name):
 
 
 @app.function_name(name="poll_bronze_for_processing")
-@app.timer_trigger(
+@app.schedule(
     schedule="0 */1 * * * *",
     arg_name="timer",
     run_on_startup=False,
