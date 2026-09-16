@@ -12,6 +12,7 @@ except ImportError:
     def load_profile_prompts(profile):
         return load_prompts()
 from pipelineUtils.blob_functions import get_blob_content
+from pipelineUtils.document_profiles import normalize_profile_result
 from pipelineUtils.azure_openai import RequestTooLargeError, run_prompt
 from pipelineUtils.transcript_parser import (
     EXTRA_COURSE_KEYS,
@@ -319,6 +320,8 @@ def _normalize_transcript_result(result, classification):
         normalized_courses.append(course)
     normalized_result["courses"] = normalized_courses
     return normalized_result
+
+
 
 
 def _polygon_to_render_rect(polygon, scale=2.0, points_per_unit=72.0):
@@ -787,4 +790,7 @@ def run(blob_input: dict):
         verify=_verification_enabled(),
     )
 
+    merged_result = _apply_profile_normalization(
+        merged_result, blob_input.get("profile", "UNKNOWN")
+    )
     return json.dumps(merged_result, ensure_ascii=False)
