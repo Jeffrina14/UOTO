@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 
 import azure.functions as func
 import azure.durable_functions as df
@@ -20,7 +21,7 @@ from activities import (
 from configuration import Configuration
 
 from pipelineUtils.accreditation import is_transcript_output_name
-from pipelineUtils.blob_functions import BlobMetadata
+from pipelineUtils.blob_functions import BlobMetadata, list_blobs
 from pipelineUtils.document_profiles import profile_for_blob
 from pipelineUtils.transcript_parser import parse_transcript_response
 
@@ -67,6 +68,73 @@ async def start_orchestrator_blob(
     client: df.DurableOrchestrationClient,
 ):
     await _handle_blob_trigger(blob, client)
+
+
+def _blob_name(blob):
+    return getattr(blob, "name", None) if blob is not None else None
+
+
+def _blob_modified(blob):
+    return getattr(blob, "last_modified", None) or getattr(
+        getattr(blob, "properties", None), "last_modified", None
+    )
+
+
+def _expected_silver_name(blob_name):
+    filename = blob_name.rsplit("/", 1)[-1]
+    return f"{filename.rsplit('.', 1)[0]}-output.json"
+
+
+@app.function_name(name="poll_bronze_for_processing")
+@app.timer_trigger(
+    schedule="0 */1 * * * *",
+    arg_name="timer",
+    run_on_startup=False,
+    use_monitor=True,
+)
+@app.durable_client_input(client_name="client")
+async def poll_bronze_for_processing(
+    timer: func.TimerRequest,
+    client: df.DurableOrchestrationClient,
+):
+    """Fallback for environments where the storage blob trigger does not poll."""
+    if config.get_value("BRONZE_POLLING_ENABLED", "true").lower() != "true":
+        return
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    lookback_minutes = int(config.get_value("BRONZE_POLL_LOOKBACK_MINUTES", "30"))
+    cutoff = now - datetime.timedelta(minutes=max(1, lookback_minutes))
+    silver_blobs = {
+        _blob_name(blob): _blob_modified(blob)
+        for blob in list_blobs("silver")
+        if _blob_name(blob)
+    }
+
+    started = 0
+    for blob in list_blobs("bronze"):
+        blob_name = _blob_name(blob)
+        modified = _blob_modified(blob)
+        if not blob_name or not modified or modified < cutoff:
+            continue
+        if not blob_name.lower().endswith((".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp")):
+            continue
+
+        output_name = _expected_silver_name(blob_name)
+        output_modified = silver_blobs.get(output_name)
+        if output_modified and output_modified >= modified:
+            continue
+
+        metadata = BlobMetadata(
+            name=blob_name,
+            container="bronze",
+            uri=f"https://{config.get_value('DATA_STORAGE_ACCOUNT_NAME', '')}.blob.core.windows.net/bronze/{blob_name}",
+            profile=profile_for_blob(blob_name),
+        )
+        await client.start_new("process_blob", client_input=metadata.to_dict())
+        started += 1
+
+    if started:
+        logging.info(f"poll_bronze_for_processing: started={started}")
 
 
 # Second stage: accreditation research, triggered by completed transcripts.
