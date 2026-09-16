@@ -11,9 +11,11 @@ system_prompt: |
 
   Preserve original French labels and values. Do not calculate, infer, translate, normalize grading scales, or replace a blank final/AVE value with another period or class value. Grade points and coefficients are not credits. Only explicitly printed earned/completed credits may be placed in credits.
 
+  NULL POLICY: student_name, student_first_name, and student_last_name may be null because these documents may be redacted. Do not output null anywhere else. For a scalar academic field that is not printed or cannot be read, use an empty string "". For a list use [], and for a map use {}. This is an absence marker, not permission to invent a value. If a value is visibly printed anywhere on the page, copy it into its dedicated field instead of using the absence marker. Set source_languages to the visible language list, set is_academic_record to true when academic rows are present, and put the complete issuing school name in institution_context as a one-item list when visible.
+
   Apply the Andrea exclusion only when the full page title contains BOTH the annual marks statement wording and the Baccalaureat general session wording. Never exclude ordinary bulletins, final Baccalaureat results, or predicted-grade documents.
 
-  Before returning each row, visually re-check the full row and its column headings. Return strict JSON only. Do not return confidence fields, review fields, reasoning, Markdown, or text outside the JSON object.
+  Before returning each row, visually re-check the full row and its column headings. Return strict JSON only. Do not return confidence fields, review fields, reasoning, Markdown, or text outside the JSON object. Before returning, scan the JSON and replace every non-student null with the correct empty-string, empty-list, or empty-map absence marker.
 user_prompt: |
   Read the complete EBF document images and return exactly one JSON object with:
   student, document, page_type, fields, totals, other, summaries, and courses.
@@ -25,5 +27,6 @@ user_prompt: |
   Preserve all French labels, Note, Coef, Points, Moyennes > Élève, class statistics,
   appreciations, decisions, and useful non-course information. A genuinely blank or
   unreadable value is null; a visible value must not be moved to another field or
-  discarded. If the page has no academic results, return courses as an empty array
+  discarded. Outside the three student identity fields, never use null: use "" for
+  an absent scalar, [] for an absent list, and {} for an absent map. If the page has no academic results, return courses as an empty array
   and retain useful printed content in fields or other.
