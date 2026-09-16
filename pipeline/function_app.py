@@ -54,37 +54,19 @@ async def _handle_blob_trigger(
     logging.info(f"Started orchestration {instance_id} for blob {blob.name}")
 
 
-# Immediate production path: Event Grid BlobCreated events for bronze uploads.
-@app.function_name(name="start_orchestrator_on_eventgrid")
-@app.event_grid_trigger(arg_name="event")
+# Bronze storage trigger. Azure Functions monitors the bronze container for new blobs.
+@app.function_name(name="start_orchestrator_on_blob")
+@app.blob_trigger(
+    arg_name="blob",
+    path="bronze/{name}",
+    connection="DataStorage",
+)
 @app.durable_client_input(client_name="client")
-async def start_orchestrator_eventgrid(
-    event: func.EventGridEvent,
+async def start_orchestrator_blob(
+    blob: func.InputStream,
     client: df.DurableOrchestrationClient,
 ):
-    event_data = event.get_json() or {}
-    subject = event.subject or ""
-    marker = "/blobs/"
-    if marker not in subject:
-        logging.warning(f"Ignoring Event Grid event without blob subject: {subject}")
-        return
-
-    blob_name = subject.split(marker, 1)[1]
-    if not blob_name.lower().endswith((".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp")):
-        return
-
-    blob_metadata = BlobMetadata(
-        name=f"bronze/{blob_name}",
-        container="bronze",
-        uri=event_data.get("url", ""),
-        profile=profile_for_blob(blob_name),
-    )
-    instance_id = await client.start_new(
-        "process_blob", client_input=blob_metadata.to_dict()
-    )
-    logging.info(
-        f"Started orchestration {instance_id} from Event Grid for bronze/{blob_name}"
-    )
+    await _handle_blob_trigger(blob, client)
 
 
 # Second stage: accreditation research, triggered by completed transcripts.
