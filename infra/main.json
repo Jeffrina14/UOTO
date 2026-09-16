@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "7409075736420232029"
+      "templateHash": "4675332412485898251"
     }
   },
   "definitions": {
@@ -31118,18 +31118,6 @@
               {
                 "name": "PROMPT_FILE_EBF",
                 "value": "ebf.yaml"
-              },
-              {
-                "name": "BRONZE_POLLING_ENABLED",
-                "value": "true"
-              },
-              {
-                "name": "BRONZE_POLL_LOOKBACK_MINUTES",
-                "value": "30"
-              },
-              {
-                "name": "DATA_STORAGE_ACCOUNT_NAME",
-                "value": "[variables('storageAccountName')]"
               },
               {
                 "name": "AOAI_MULTI_MODAL",

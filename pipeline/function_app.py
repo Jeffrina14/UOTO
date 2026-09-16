@@ -1,7 +1,5 @@
 import json
 import logging
-import datetime
-import hashlib
 
 import azure.functions as func
 import azure.durable_functions as df
@@ -22,7 +20,7 @@ from activities import (
 from configuration import Configuration
 
 from pipelineUtils.accreditation import is_transcript_output_name
-from pipelineUtils.blob_functions import BlobMetadata, list_blobs
+from pipelineUtils.blob_functions import BlobMetadata
 from pipelineUtils.document_profiles import profile_for_blob
 from pipelineUtils.transcript_parser import parse_transcript_response
 
@@ -69,60 +67,6 @@ async def start_orchestrator_blob(
     client: df.DurableOrchestrationClient,
 ):
     await _handle_blob_trigger(blob, client)
-
-
-def _poll_instance_id(blob_name):
-    digest = hashlib.sha256(blob_name.encode("utf-8")).hexdigest()[:48]
-    return f"bronze-poll-{digest}"
-
-
-@app.function_name(name="poll_bronze_for_processing")
-@app.schedule(
-    schedule="0 */1 * * * *",
-    arg_name="timer",
-    run_on_startup=False,
-    use_monitor=True,
-)
-@app.durable_client_input(client_name="client")
-async def poll_bronze_for_processing(
-    timer: func.TimerRequest,
-    client: df.DurableOrchestrationClient,
-):
-    if config.get_value("BRONZE_POLLING_ENABLED", "true").lower() != "true":
-        return
-
-    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-        minutes=max(1, int(config.get_value("BRONZE_POLL_LOOKBACK_MINUTES", "30")))
-    )
-    silver_by_name = {blob.name: blob.last_modified for blob in list_blobs("silver")}
-    started = 0
-    for blob in list_blobs("bronze"):
-        if not blob.name or not blob.last_modified or blob.last_modified < cutoff:
-            continue
-        if not blob.name.lower().endswith((".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp")):
-            continue
-
-        filename = blob.name.rsplit("/", 1)[-1]
-        output_name = f"{filename.rsplit('.', 1)[0]}-output.json"
-        if silver_by_name.get(output_name) and silver_by_name[output_name] >= blob.last_modified:
-            continue
-
-        instance_id = _poll_instance_id(blob.name)
-        status = await client.get_status(instance_id)
-        if status and status.runtime_status in {"Pending", "Running"}:
-            continue
-
-        metadata = BlobMetadata(
-            name=blob.name,
-            container="bronze",
-            uri=f"https://{config.get_value('DATA_STORAGE_ACCOUNT_NAME')}.blob.core.windows.net/bronze/{filename}",
-            profile=profile_for_blob(filename),
-        )
-        await client.start_new("process_blob", instance_id=instance_id, client_input=metadata.to_dict())
-        started += 1
-
-    if started:
-        logging.info(f"poll_bronze_for_processing: started={started}")
 
 
 # Second stage: accreditation research, triggered by completed transcripts.
