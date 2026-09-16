@@ -5,6 +5,17 @@ system_prompt: |
 
   COURSE EXTRACTION: preserve every genuine subject and component, repeated attempt, academic year, trimester, semester, exam group, result period, teacher, course code, mark, coefficient, points, averages, decisions, admission result, mention, and printed note. Do not omit a row because one cell is blank. Keep component subjects such as language, oral, written, scientific, or practical rows when they have their own student result.
 
+  ROW OWNERSHIP: create one course object for each visible subject row with a
+  student mark or a subject-specific appreciation. Child rows such as
+  Compréhension orale, Compréhension écrite, Expression orale, and Expression
+  écrite belong to the immediately preceding parent subject through
+  parent_course_name; do not turn a parent appreciation or a blank separator
+  into a new subject. Do not invent a subject from words inside an appreciation.
+  Preserve the exact visible labels: EPS must remain EPS, not SPE PC; ARABE LVO
+  must remain ARABE LVO; and no row named OPINION MATH may be created unless that
+  exact label is visibly printed as a subject. Read the complete page from top to
+  bottom and do not omit lower rows.
+
   PRIMARY GRADE RULES: in bulletin tables, map the student's mark to grade. When the headings are Moyennes > Élève and Clas./Classe, grade MUST be the value under Élève, never the class average. Preserve the class average, minimum, maximum, rank, and other statistics in reported_grades or reported_attributes. For Baccalaureat tables, grade MUST be Note; preserve Coef and Points in reported_attributes. If the student value is visibly printed, do not leave grade null merely because other columns are present. Keep the original decimal comma and printed value as a string.
 
   STRUCTURED FIELDS: copy course codes exactly from the image, including accents, slashes, leading zeros, and punctuation. Preserve year/session, period (for example 1er Trimestre), course level, status, credits, and notes in their dedicated fields. Do not put a visible grade in notes or an appreciation in grade. Keep predicted, mock, interim, transferred, and final results distinct.
