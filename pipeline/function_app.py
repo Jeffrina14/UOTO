@@ -101,7 +101,7 @@ async def start_accreditation_blob(
 
 
 # An HTTP-triggered function with a Durable Functions client binding
-@app.route(route="client")
+@app.route(route="client", methods=["POST"])
 @app.durable_client_input(client_name="client")
 async def start_orchestrator_http(req: func.HttpRequest, client):
     """
