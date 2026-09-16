@@ -383,6 +383,18 @@ var appSettings = [
     value: 'ebf.yaml'
   }
   {
+    name: 'BRONZE_POLLING_ENABLED'
+    value: 'true'
+  }
+  {
+    name: 'BRONZE_POLL_LOOKBACK_MINUTES'
+    value: '30'
+  }
+  {
+    name: 'DATA_STORAGE_ACCOUNT_NAME'
+    value: storageAccountName
+  }
+  {
     name: 'AOAI_MULTI_MODAL'
     value: 'true'
   }
