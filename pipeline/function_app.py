@@ -1,5 +1,6 @@
 import json
 import logging
+from urllib.parse import unquote, urlparse
 
 import azure.functions as func
 import azure.durable_functions as df
@@ -67,6 +68,49 @@ async def start_orchestrator_blob(
     client: df.DurableOrchestrationClient,
 ):
     await _handle_blob_trigger(blob, client)
+
+
+@app.function_name(name="start_orchestrator_on_eventgrid_queue")
+@app.queue_trigger(
+    arg_name="message",
+    queue_name="bronze-blob-events",
+    connection="DataStorage",
+)
+@app.durable_client_input(client_name="client")
+async def start_orchestrator_eventgrid_queue(
+    message: func.QueueMessage,
+    client: df.DurableOrchestrationClient,
+):
+    events = json.loads(message.get_body().decode("utf-8"))
+    if isinstance(events, dict):
+        events = [events]
+
+    for event in events:
+        if event.get("eventType") != "Microsoft.Storage.BlobCreated":
+            continue
+
+        blob_uri = event.get("data", {}).get("url")
+        if not blob_uri:
+            logging.warning("Ignoring BlobCreated event without a blob URL")
+            continue
+
+        path = unquote(urlparse(blob_uri).path).lstrip("/")
+        container, _, blob_name = path.partition("/")
+        if container != "bronze" or not blob_name:
+            continue
+
+        blob_metadata = BlobMetadata(
+            name=blob_name,
+            container=container,
+            uri=blob_uri,
+            profile=profile_for_blob(blob_name),
+        )
+        instance_id = await client.start_new(
+            "process_blob", client_input=blob_metadata.to_dict()
+        )
+        logging.info(
+            f"Started orchestration {instance_id} from Event Grid message for {blob_name}"
+        )
 
 
 # Second stage: accreditation research, triggered by completed transcripts.
