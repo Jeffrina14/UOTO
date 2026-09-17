@@ -748,6 +748,20 @@ def convert_to_base64_images(blob_input: dict, blob_content: bytes):
         "Supported extensions are PDF, PNG, JPG, JPEG, TIFF, and BMP."
     )
 
+
+def extract_header_identity_crop(blob_input: dict, blob_content: bytes):
+    """Return a high-resolution crop of the first PDF header for issuer reading."""
+    if os.path.splitext(blob_input.get("name") or "")[1].lower() != ".pdf":
+        return None
+
+    with fitz.open(stream=blob_content, filetype="pdf") as document:
+        if not document:
+            return None
+        page = document[0]
+        header = fitz.Rect(0, 0, page.rect.width, page.rect.height * 0.3)
+        pix = page.get_pixmap(matrix=fitz.Matrix(4, 4), clip=header, alpha=False)
+        return base64.b64encode(pix.tobytes("png")).decode("ascii")
+
 @bp.function_name(name)
 @bp.activity_trigger(input_name="blob_input")
 def run(blob_input: dict):
@@ -766,6 +780,15 @@ def run(blob_input: dict):
     classification = _classify_document_pages(base64_images, instance_id)
     document_context = _format_extraction_context(classification)
     user_prompt = prompt_json["user_prompt"]
+    header_crop = extract_header_identity_crop(blob_input, blob_content)
+    if header_crop:
+        base64_images = [header_crop] + base64_images
+        user_prompt = (
+            f"{user_prompt}\n\n"
+            "The first supplied image is an enlarged crop of the first-page header. "
+            "Use it only to identify the issuing institution and any visibly printed "
+            "location, country, or website. Do not create course rows from this crop."
+        )
     if (
         _table_cropping_enabled()
         and os.path.splitext(blob_name or "")[1].lower() == ".pdf"
