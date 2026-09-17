@@ -177,7 +177,11 @@ def build_search_queries(institution):
     if not name:
         return []
     identity = " ".join(value for value in (name, location, country) if value)
-    return [template.format(institution=identity) for template in SEARCH_QUERY_TEMPLATES]
+    queries = [template.format(institution=identity) for template in SEARCH_QUERY_TEMPLATES]
+    website_host = _host(institution.get("website")) if isinstance(institution, dict) else ""
+    if website_host:
+        queries.append(f'site:{website_host} accreditation')
+    return queries
 
 
 def build_search_payload(query, max_results):

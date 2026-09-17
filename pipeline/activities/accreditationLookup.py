@@ -21,8 +21,7 @@ bp = df.Blueprint()
 config = Configuration()
 
 ASSESS_SYSTEM_PROMPT = (
-    "You assess whether an educational institution appears in recognized "
-    "accreditation or membership directories, using ONLY the supplied web search "
+    "You assess educational accreditation evidence using ONLY supplied web search "
     "results. You never invent facts and return one valid JSON object."
 )
 
@@ -148,6 +147,7 @@ def build_assess_prompt(institution, hits):
     return f"""Institution to check: "{institution.get('name')}"
 Printed location: "{institution.get('location') or ''}"
 Printed country: "{institution.get('country') or ''}"
+Printed official website: "{institution.get('website') or ''}"
 
 Decide, USING ONLY THE SEARCH RESULTS BELOW, whether this institution appears in a
 recognized accreditation/membership directory or has clear accreditation evidence.
@@ -170,8 +170,11 @@ RULES
   AND the result indicates THIS institution is listed there. Record each such hit
   in matched_directories with the directory name, the exact url from the results,
   and a SHORT evidence quote taken from that result's snippet (max 14 words).
-- "accredited_other_source": no directory hit, but a result clearly states the
-  institution is accredited. Name the body in accrediting_bodies.
+- "accredited_other_source": no directory hit, but an official school, government,
+    or accreditor result clearly states that this exact institution is accredited.
+    Name the body in accrediting_bodies and identify the supporting source in summary.
+- Do not treat blogs, directories that are not listed above, marketing claims without
+    an accrediting body, or an unrelated school with a similar name as accreditation evidence.
 - "not_found": results were returned but none show accreditation or a listing.
 - "unverified": results are too thin or ambiguous, or appear to describe a
   different entity than the one named.
@@ -184,20 +187,16 @@ RULES
 
 def _search(query):
     try:
-        allowed_domains = list(ACCREDITATION_DIRECTORIES.values())
         response = _openai_client().responses.create(
             model=config.get_value("OPENAI_MODEL"),
-            tools=[{
-                "type": "web_search",
-                "filters": {"allowed_domains": allowed_domains},
-            }],
+            tools=[{"type": "web_search"}],
             tool_choice="required",
             include=["web_search_call.action.sources"],
             input=(
                 f"Search the public web for: {query}. "
-                "Return concise, factual accreditation-directory evidence for "
-                "the institution in the query and cite each source URL. Do not "
-                "include personal information."
+                "Find school-specific evidence from an official school website, "
+                "government authority, recognized accreditor, or accreditation "
+                "directory. Cite each source URL. Do not include personal information."
             ),
         )
         return normalize_search_results(_search_sources(response))

@@ -156,6 +156,15 @@ class PrivacyTests(unittest.TestCase):
         })
         self.assertTrue(all("Braintree, Massachusetts" in query for query in queries))
 
+    def test_search_queries_include_official_website(self):
+        queries = build_search_queries({
+            "name": "St. Francis High School",
+            "location": "Wheaton, Illinois",
+            "country": "United States",
+            "website": "https://www.stfhcollegprep.org",
+        })
+        self.assertIn("site:stfhcollegprep.org accreditation", queries)
+
     def test_gold_document_has_no_student_fields(self):
         document = build_document_result("t-output.json", [], "2024-01-01T00:00:00Z")
         self.assertNotIn("student_name", document)
