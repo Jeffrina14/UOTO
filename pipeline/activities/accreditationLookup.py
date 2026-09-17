@@ -56,6 +56,7 @@ def _openai_client():
     return OpenAI(
         base_url=f"{endpoint}/openai/v1/",
         api_key=token,
+        timeout=_timeout(),
     )
 
 
