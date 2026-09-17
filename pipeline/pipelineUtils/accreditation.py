@@ -178,7 +178,7 @@ def build_search_queries(institution):
         return []
     identity = " ".join(value for value in (name, location, country) if value)
     queries = [template.format(institution=identity) for template in SEARCH_QUERY_TEMPLATES]
-    website_host = _host(institution.get("website")) if isinstance(institution, dict) else ""
+    website_host = _website_host(institution.get("website")) if isinstance(institution, dict) else ""
     if website_host:
         queries.append(f'site:{website_host} accreditation')
     return queries
@@ -482,6 +482,14 @@ def _host(url):
         return ""
     host = urlparse(str(url)).netloc.lower().split(":")[0]
     return host[4:] if host.startswith("www.") else host
+
+
+def _website_host(website):
+    """Accept a printed bare domain as well as an absolute website URL."""
+    value = str(website or "").strip()
+    if not value:
+        return ""
+    return _host(value if "://" in value else f"https://{value}")
 
 
 def _significant_tokens(name):

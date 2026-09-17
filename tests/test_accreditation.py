@@ -165,6 +165,13 @@ class PrivacyTests(unittest.TestCase):
         })
         self.assertIn("site:stfhcollegprep.org accreditation", queries)
 
+    def test_search_queries_accept_bare_official_domain(self):
+        queries = build_search_queries({
+            "name": "Aquinas International Academy",
+            "website": "www.aquinasinternationalacademy.com",
+        })
+        self.assertIn("site:aquinasinternationalacademy.com accreditation", queries)
+
     def test_gold_document_has_no_student_fields(self):
         document = build_document_result("t-output.json", [], "2024-01-01T00:00:00Z")
         self.assertNotIn("student_name", document)
