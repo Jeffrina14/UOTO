@@ -43,6 +43,19 @@ class DocumentProfileTests(unittest.TestCase):
         self.assertEqual(result["institution_context"], ["Braintree High School"])
         self.assertEqual(result["courses"][0]["institution"], "Braintree High School")
 
+    def test_normalization_corrects_verified_issuer_ocr_variant(self):
+        result = normalize_profile_result(
+            {
+                "institution_details": [{"name": "École Française Internationale de Djedda"}],
+                "courses": [{"institution": "École Française Internationale de Djedda"}],
+            },
+            PROFILE_EBF,
+        )
+
+        expected = "École Française Internationale de Djeddah"
+        self.assertEqual(result["institution_details"][0]["name"], expected)
+        self.assertEqual(result["courses"][0]["institution"], expected)
+
 
 if __name__ == "__main__":
     unittest.main()

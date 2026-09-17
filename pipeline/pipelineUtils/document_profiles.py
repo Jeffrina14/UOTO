@@ -5,6 +5,10 @@ PROFILE_SUS = "SUS"
 PROFILE_EBF = "EBF"
 PROFILE_UNKNOWN = "UNKNOWN"
 
+_INSTITUTION_NAME_FIXES = {
+    "École Française Internationale de Djedda": "École Française Internationale de Djeddah",
+}
+
 _PROFILE_PATTERN = re.compile(r"(?:^|[_.-])(SUS|EBF)(?:[_.-]|$)", re.IGNORECASE)
 
 
@@ -35,8 +39,20 @@ def normalize_profile_result(result, profile):
     normalized["institution_context"] = normalized.get("institution_context") or []
     normalized["institution_details"] = normalized.get("institution_details") or []
 
+    def normalize_institution_name(value):
+        return _INSTITUTION_NAME_FIXES.get(value, value)
+
+    normalized["institution_context"] = [
+        normalize_institution_name(value)
+        for value in normalized["institution_context"]
+    ]
+    for detail in normalized["institution_details"]:
+        if isinstance(detail, dict):
+            detail["name"] = normalize_institution_name(detail.get("name"))
+
     for original_course in normalized.get("courses") or []:
         course = dict(original_course)
+        course["institution"] = normalize_institution_name(course.get("institution"))
         if course.get("course_name") in course_name_fixes:
             course["course_name"] = course_name_fixes[course["course_name"]]
         for key in (
