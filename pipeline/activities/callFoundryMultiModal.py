@@ -790,7 +790,7 @@ def run(blob_input: dict):
         verify=_verification_enabled(),
     )
 
-    merged_result = _apply_profile_normalization(
+    merged_result = normalize_profile_result(
         merged_result, blob_input.get("profile", "UNKNOWN")
     )
     return json.dumps(merged_result, ensure_ascii=False)
