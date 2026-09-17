@@ -109,6 +109,21 @@ class ExtractInstitutionsTests(unittest.TestCase):
         )
         self.assertFalse(truncated)
 
+    def test_uses_printed_institution_location_before_course_context(self):
+        institutions, truncated = extract_institutions({
+            "institution_details": [{
+                "name": "Braintree High School",
+                "location": "Braintree, Massachusetts",
+                "country": "United States",
+                "website": "",
+            }],
+            "courses": [{"institution": "Braintree High School"}],
+        })
+        self.assertEqual(len(institutions), 1)
+        self.assertEqual(institutions[0]["location"], "Braintree, Massachusetts")
+        self.assertEqual(institutions[0]["country"], "United States")
+        self.assertFalse(truncated)
+
     def test_rejects_non_object_transcript(self):
         with self.assertRaises(ValueError):
             extract_institutions(["courses"])
@@ -128,10 +143,18 @@ class PrivacyTests(unittest.TestCase):
             ],
         }
         institutions, _ = extract_institutions(transcript)
-        queries = build_search_queries(institutions[0]["name"])
+        queries = build_search_queries(institutions[0])
         blob = " ".join(queries).lower()
         for leak in ("jane", "doe", "organic chemistry", "a-"):
             self.assertNotIn(leak, blob)
+
+    def test_search_queries_include_printed_location(self):
+        queries = build_search_queries({
+            "name": "Braintree High School",
+            "location": "Braintree, Massachusetts",
+            "country": "United States",
+        })
+        self.assertTrue(all("Braintree, Massachusetts" in query for query in queries))
 
     def test_gold_document_has_no_student_fields(self):
         document = build_document_result("t-output.json", [], "2024-01-01T00:00:00Z")

@@ -29,14 +29,14 @@ system_prompt: |
 
   Preserve original French labels and values. Do not calculate, infer, translate, normalize grading scales, or replace a blank final/AVE value with another period or class value. Grade points and coefficients are not credits. Only explicitly printed earned/completed credits may be placed in credits.
 
-  NULL POLICY: student_name, student_first_name, and student_last_name may be null because these documents may be redacted. Do not output null anywhere else. For a scalar academic field that is not printed or cannot be read, use an empty string "". For a list use [], and for a map use {}. This is an absence marker, not permission to invent a value. If a value is visibly printed anywhere on the page, copy it into its dedicated field instead of using the absence marker. Set source_languages to the visible language list, set is_academic_record to true when academic rows are present, and put the complete issuing school name in institution_context as a one-item list when visible.
+  NULL POLICY: student_name, student_first_name, and student_last_name may be null because these documents may be redacted. Do not output null anywhere else. For a scalar academic field that is not printed or cannot be read, use an empty string "". For a list use [], and for a map use {}. This is an absence marker, not permission to invent a value. If a value is visibly printed anywhere on the page, copy it into its dedicated field instead of using the absence marker. Set source_languages to the visible language list, set is_academic_record to true when academic rows are present, and put the complete issuing school name in institution_context as a one-item list when visible. Also return institution_details as an array with one object: name, location, country, and website. Extract location only when visibly printed in the school header, issuer block, seal, or official contact/address; use "" for a missing value and never infer it from the profile or filename.
 
   Apply the Andrea exclusion only when the full page title contains BOTH the annual marks statement wording and the Baccalaureat general session wording. Never exclude ordinary bulletins, final Baccalaureat results, or predicted-grade documents.
 
   Before returning each row, visually re-check the full row and its column headings. Return strict JSON only. Do not return confidence fields, review fields, reasoning, Markdown, or text outside the JSON object. Before returning, scan the JSON and replace every non-student null with the correct empty-string, empty-list, or empty-map absence marker.
 user_prompt: |
   Read the complete EBF document images and return exactly one JSON object with:
-  student, document, page_type, fields, totals, other, summaries, and courses.
+  student, document, institution_details, page_type, fields, totals, other, summaries, and courses.
   The document object should include the complete issuer/institution when visible.
   Each course should contain course_name, course_code, institution, year_or_session,
   course_level, period, grade, credits, status, parent_course_name, notes,

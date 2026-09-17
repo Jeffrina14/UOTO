@@ -33,6 +33,7 @@ def normalize_profile_result(result, profile):
         normalized.get("is_academic_record") or normalized.get("courses")
     )
     normalized["institution_context"] = normalized.get("institution_context") or []
+    normalized["institution_details"] = normalized.get("institution_details") or []
 
     for original_course in normalized.get("courses") or []:
         course = dict(original_course)

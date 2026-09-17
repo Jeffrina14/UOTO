@@ -146,6 +146,8 @@ def build_assess_prompt(institution, hits):
         hits_block = "(no results returned)"
 
     return f"""Institution to check: "{institution.get('name')}"
+Printed location: "{institution.get('location') or ''}"
+Printed country: "{institution.get('country') or ''}"
 
 Decide, USING ONLY THE SEARCH RESULTS BELOW, whether this institution appears in a
 recognized accreditation/membership directory or has clear accreditation evidence.
@@ -162,6 +164,8 @@ Return STRICT JSON only, exactly this shape:
 {ASSESS_SCHEMA}
 
 RULES
+- When a printed location or country is supplied, use it to distinguish institutions
+    with the same name. Do not invent a location when it is blank.
 - "found_in_directory": at least one result's url domain matches a directory above
   AND the result indicates THIS institution is listed there. Record each such hit
   in matched_directories with the directory name, the exact url from the results,
@@ -210,7 +214,7 @@ def run(args: dict):
     institution = args.get("institution") or {}
     instance_id = args.get("instance_id", "")
 
-    queries = build_search_queries(institution.get("name"))
+    queries = build_search_queries(institution)
     if not queries:
         return unverified_result(institution, queries, "The institution name was empty.")
 

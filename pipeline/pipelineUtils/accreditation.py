@@ -109,6 +109,22 @@ def extract_institutions(transcript, limit=None):
 
     seen = set()
     institutions = []
+
+    for detail in transcript.get("institution_details") or []:
+        if not isinstance(detail, dict):
+            continue
+        name = " ".join(str(detail.get("name") or "").split())
+        key = name.lower()
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        institutions.append({
+            "name": name,
+            "location": " ".join(str(detail.get("location") or "").split()) or None,
+            "country": " ".join(str(detail.get("country") or "").split()) or None,
+            "website": " ".join(str(detail.get("website") or "").split()) or None,
+        })
+
     for course in courses:
         if not isinstance(course, dict):
             continue
@@ -149,11 +165,19 @@ def extract_institutions(transcript, limit=None):
     return institutions, truncated
 
 
-def build_search_queries(institution_name):
-    name = " ".join(str(institution_name or "").split())
+def build_search_queries(institution):
+    if isinstance(institution, dict):
+        name = " ".join(str(institution.get("name") or "").split())
+        location = " ".join(str(institution.get("location") or "").split())
+        country = " ".join(str(institution.get("country") or "").split())
+    else:
+        name = " ".join(str(institution or "").split())
+        location = ""
+        country = ""
     if not name:
         return []
-    return [template.format(institution=name) for template in SEARCH_QUERY_TEMPLATES]
+    identity = " ".join(value for value in (name, location, country) if value)
+    return [template.format(institution=identity) for template in SEARCH_QUERY_TEMPLATES]
 
 
 def build_search_payload(query, max_results):

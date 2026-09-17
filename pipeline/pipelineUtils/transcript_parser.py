@@ -33,6 +33,7 @@ EXTRA_TOP_LEVEL_KEYS = (
     "document_fields",
     "other_information",
     "institution_context",
+    "institution_details",
 )
 
 TOP_LEVEL_DEFAULTS = {
@@ -44,6 +45,7 @@ TOP_LEVEL_DEFAULTS = {
     "document_type": None,
     "is_academic_record": False,
     "institution_context": [],
+    "institution_details": [],
     "courses": [],
 }
 
@@ -240,6 +242,23 @@ def parse_transcript_response(raw_response: str) -> dict:
         result["institution_context"] = [
             _normalize_value(institution) for institution in institution_context
             if isinstance(institution, str) and institution.strip()
+        ]
+
+    institution_details = result["institution_details"]
+    if institution_details is None:
+        result["institution_details"] = []
+    elif not isinstance(institution_details, list):
+        raise ValueError("institution_details must be a JSON array")
+    else:
+        result["institution_details"] = [
+            {
+                "name": _normalize_value(detail.get("name")) or "",
+                "location": _normalize_value(detail.get("location")) or "",
+                "country": _normalize_value(detail.get("country")) or "",
+                "website": _normalize_value(detail.get("website")) or "",
+            }
+            for detail in institution_details
+            if isinstance(detail, dict) and _normalize_value(detail.get("name"))
         ]
 
     courses = result["courses"]
