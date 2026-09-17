@@ -56,6 +56,17 @@ class DocumentProfileTests(unittest.TestCase):
         self.assertEqual(result["institution_details"][0]["name"], expected)
         self.assertEqual(result["courses"][0]["institution"], expected)
 
+    def test_normalization_corrects_repeated_letter_issuer_variant(self):
+        result = normalize_profile_result(
+            {"courses": [{"institution": "École Française Internationale de Ddeddah"}]},
+            PROFILE_EBF,
+        )
+
+        self.assertEqual(
+            result["courses"][0]["institution"],
+            "École Française Internationale de Djeddah",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,7 @@ PROFILE_UNKNOWN = "UNKNOWN"
 
 _INSTITUTION_NAME_FIXES = {
     "École Française Internationale de Djedda": "École Française Internationale de Djeddah",
+    "École Française Internationale de Ddeddah": "École Française Internationale de Djeddah",
 }
 
 _PROFILE_PATTERN = re.compile(r"(?:^|[_.-])(SUS|EBF)(?:[_.-]|$)", re.IGNORECASE)
