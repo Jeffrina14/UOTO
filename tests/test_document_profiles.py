@@ -4,6 +4,7 @@ from pipeline.pipelineUtils.document_profiles import (
     PROFILE_EBF,
     PROFILE_SUS,
     PROFILE_UNKNOWN,
+    normalize_profile_result,
     profile_for_blob,
 )
 
@@ -29,6 +30,18 @@ class DocumentProfileTests(unittest.TestCase):
 
     def test_unknown_files_are_explicit(self):
         self.assertEqual(profile_for_blob("transcript_without_profile.pdf"), PROFILE_UNKNOWN)
+
+    def test_profile_normalization_preserves_extracted_institution(self):
+        result = normalize_profile_result(
+            {
+                "institution_context": ["Braintree High School"],
+                "courses": [{"institution": "Braintree High School"}],
+            },
+            PROFILE_SUS,
+        )
+
+        self.assertEqual(result["institution_context"], ["Braintree High School"])
+        self.assertEqual(result["courses"][0]["institution"], "Braintree High School")
 
 
 if __name__ == "__main__":
