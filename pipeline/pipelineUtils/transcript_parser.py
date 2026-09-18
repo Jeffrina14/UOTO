@@ -13,6 +13,29 @@ COURSE_KEYS = (
     "notes",
 )
 
+EXTRA_COURSE_KEYS = (
+    "period",
+    "credits",
+    "status",
+    "parent_course_name",
+    "reported_grades",
+    "reported_credits",
+    "reported_attributes",
+)
+
+EXTRA_TOP_LEVEL_KEYS = (
+    "page_type",
+    "fields",
+    "totals",
+    "other",
+    "summaries",
+    "academic_summary_rows",
+    "document_fields",
+    "other_information",
+    "institution_context",
+    "institution_details",
+)
+
 TOP_LEVEL_DEFAULTS = {
     "student_name": None,
     "student_first_name": None,
@@ -21,6 +44,8 @@ TOP_LEVEL_DEFAULTS = {
     "source_languages": [],
     "document_type": None,
     "is_academic_record": False,
+    "institution_context": [],
+    "institution_details": [],
     "courses": [],
 }
 
@@ -125,10 +150,36 @@ def _normalize_course(course: Any, index: int) -> dict:
     if not isinstance(course, dict):
         raise ValueError(f"Course row at index {index} must be a JSON object")
 
-    return {
+    normalized = {
         key: _normalize_value(course.get(key))
         for key in COURSE_KEYS
     }
+    for key in EXTRA_COURSE_KEYS:
+        if key in course:
+            normalized[key] = course[key]
+    return normalized
+
+
+def parse_json_object(raw_response: str) -> dict:
+    """Parse a model response into a JSON object, tolerating fences and thinking blocks."""
+    if not isinstance(raw_response, str) or not raw_response.strip():
+        raise ValueError("Model response cannot be empty")
+
+    cleaned_response = _remove_thinking_blocks(raw_response)
+    cleaned_response = _remove_json_fences(cleaned_response).strip()
+    if not cleaned_response:
+        raise ValueError("Model response cannot be empty after removing wrappers")
+
+    json_text = _remove_trailing_commas(_extract_outer_object(cleaned_response))
+    try:
+        parsed = json.loads(json_text)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Model response contains malformed JSON: {error.msg}") from error
+
+    if not isinstance(parsed, dict):
+        raise ValueError("Model response top-level value must be a JSON object")
+
+    return parsed
 
 
 def parse_transcript_response(raw_response: str) -> dict:
@@ -157,6 +208,9 @@ def parse_transcript_response(raw_response: str) -> dict:
         for key in TOP_LEVEL_DEFAULTS
         if key in parsed
     }
+    for key in EXTRA_TOP_LEVEL_KEYS:
+        if key in parsed:
+            result[key] = parsed[key]
     for key, default in TOP_LEVEL_DEFAULTS.items():
         result.setdefault(key, default.copy() if isinstance(default, list) else default)
 
@@ -177,6 +231,34 @@ def parse_transcript_response(raw_response: str) -> dict:
     else:
         result["source_languages"] = [
             _normalize_value(language) for language in source_languages
+        ]
+
+    institution_context = result["institution_context"]
+    if institution_context is None:
+        result["institution_context"] = []
+    elif not isinstance(institution_context, list):
+        raise ValueError("institution_context must be a JSON array")
+    else:
+        result["institution_context"] = [
+            _normalize_value(institution) for institution in institution_context
+            if isinstance(institution, str) and institution.strip()
+        ]
+
+    institution_details = result["institution_details"]
+    if institution_details is None:
+        result["institution_details"] = []
+    elif not isinstance(institution_details, list):
+        raise ValueError("institution_details must be a JSON array")
+    else:
+        result["institution_details"] = [
+            {
+                "name": _normalize_value(detail.get("name")) or "",
+                "location": _normalize_value(detail.get("location")) or "",
+                "country": _normalize_value(detail.get("country")) or "",
+                "website": _normalize_value(detail.get("website")) or "",
+            }
+            for detail in institution_details
+            if isinstance(detail, dict) and _normalize_value(detail.get("name"))
         ]
 
     courses = result["courses"]

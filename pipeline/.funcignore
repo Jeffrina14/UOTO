@@ -7,3 +7,4 @@ local.settings.json
 test
 *local.settings.json
 .venv
+.python_packages

@@ -23,9 +23,15 @@ class BlobMetadata:
     name: str
     uri: str
     container: str
+    profile: str = "UNKNOWN"
 
     def to_dict(self):
-        return {"name": self.name, "uri": self.uri, "container": self.container}
+        return {
+            "name": self.name,
+            "uri": self.uri,
+            "container": self.container,
+            "profile": self.profile,
+        }
 
     def to_json(self):
         return json.dumps(self.to_dict(), ensure_ascii=False)

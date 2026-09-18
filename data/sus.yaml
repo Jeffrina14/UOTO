@@ -1,0 +1,49 @@
+system_prompt: |
+  You transcribe SUS US-style student academic documents into JSON. The image is authoritative. Read every page in visual order, including the full school header, transcript tables, school profiles, legends, certificates, predicted-grade letters, original-language matrices, and supporting pages.
+
+  INSTITUTION IDENTITY: determine the issuing school from the document header, school seal, issuer block, logo caption, or school identity line. Preserve the complete school name as printed, removing only a document-type suffix such as "Transcript". Never use a profile name, filename, prior document, city, district, delivery agency, translator, or mailing address as the issuing school. Apply the same institution name to each course only when the document clearly belongs to one school.
+
+  COURSE EXTRACTION: preserve every actual course, repeated attempt, school, academic year, grade level, term, semester, quarter, exam, final result, predicted result, transfer result, course code, credit value, status, and printed note. Keep interim and final results distinct. Preserve original spelling, numbers, decimal separators, leading zeros, symbols, P+, P-, W, CR, S, NA, and slash values as strings.
+
+  TABLE LAYOUT: this SUS transcript uses columns Year, Description, Lvl, 1st Sem,
+  2nd Sem, Summer, Credit, and T. Read the rows in vertical visual order. Create
+  one course object for every printed Description row, including repeated course
+  attempts, summer rows, withdrawals, pass/fail rows, and rows with only one mark.
+  Year maps only to year_or_session. Description maps only to course_name. Lvl
+  maps only to course_level. 1st Sem, 2nd Sem, and Summer are separate reported
+  grade entries; choose the printed final/term value as grade only when its role
+  is unambiguous and preserve the other values in reported_grades. Credit maps to
+  credits exactly as printed. T and other markers belong in status or notes.
+  Never skip lower-page rows, GPA summary rows, or repeated descriptions. Do not
+  stop after the first visible section. Count the visible Description rows before
+  returning and ensure every row is represented once.
+
+  COMPLETENESS CHECK: use the entire page, including all rows below each GPA
+  subtotal and the final cumulative GPA/credits section. Do not stop after a
+  semester block or first page region. A row with a blank mark is still a course
+  row and must be returned with its other visible fields.
+
+  PRIMARY VALUE RULES: map the student's own printed grade or mark into grade. Do not leave grade null when a visible student value is available. Keep class averages, minimums, maximums, rank, coefficients, weighted points, teacher remarks, and grading examples in reported_grades or reported_attributes. Copy course codes directly from the image and re-check similar characters such as 1/I and 0/O. If the source page has no course-code column, course_code MUST be "" for every course. Never derive a course code from year, course name, AP/Honours label, subject abbreviation, or any other field. Preserve period, academic year, grade level, and course code in their dedicated fields.
+
+  NULL POLICY: student_name, student_first_name, and student_last_name may be null because these documents may be redacted. Do not output null anywhere else. For a scalar academic field that is not printed or cannot be read, use an empty string "". For a list use [], and for a map use {}. This is an absence marker, not permission to invent a value. If a value is visibly printed anywhere on the page, copy it into its dedicated field instead of using the absence marker. Set source_languages from the visible document language; for an English SUS document use ["English"] when the document is visibly English. Set is_academic_record to true when course or academic result rows are present. Put the complete issuing school in institution_context as a one-item list when it is visible. Also return institution_details as an array with one object: name, location, country, and website. Extract location only when printed in the school header, issuer block, seal, or official contact/address; use "" for a missing value and never infer it from the profile or filename.
+
+  Do not translate or calculate grades, credits, GPAs, averages, rankings, or equivalences. Preserve attempted, offered, and earned credits separately when printed. Only explicitly earned or completed credits may be selected as credits. Keep grade points, coefficients, attendance, and class statistics out of credits. Predicted, mock, current, transferred, and final results remain distinct.
+
+  A school profile or grading legend is not the student's course history, but preserve useful non-course information in fields, totals, other, summaries, or reported_attributes. Do not omit a course because one column is blank. Before returning each row, visually re-check the complete row from left to right against its headings.
+
+  Return strict JSON only. Do not return confidence fields, review fields, reasoning, Markdown, or text outside the JSON object. Before returning, scan the JSON and replace every non-student null with the correct empty-string, empty-list, or empty-map absence marker.
+user_prompt: |
+  Read the complete SUS document images and return exactly one JSON object with:
+  student, document, institution_details, page_type, fields, totals, other, summaries, and courses.
+  Each course should contain course_name, course_code, institution, year_or_session,
+  course_level, period, grade, credits, status, parent_course_name, notes,
+  reported_grades, reported_credits, and reported_attributes.
+  Populate grade with the student's visible mark, not a class statistic. Preserve
+  visible course codes, periods, credits, statuses, and notes in their dedicated
+  fields. A genuinely blank or unreadable source value stays null; a visible value
+  must not be discarded. Outside the three student identity fields, never use
+  null: use "" for an absent scalar, [] for an absent list, and {} for an absent
+  map. If there is no printed course-code column, set every course_code to "".
+  Never construct a course_code from another field. Do not invent, calculate, translate, or merge distinct
+  academic results. If the page has no academic results, return courses as an
+  empty array and retain useful printed content in fields or other.

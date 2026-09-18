@@ -90,6 +90,20 @@ class TranscriptParserTests(unittest.TestCase):
             "Predicted and mock result; current course; transferred credit; final result",
         )
 
+    def test_preserves_profile_specific_course_fields(self):
+        result = parse_transcript_response(
+            '{"page_type":"transcript","fields":{"school":"Example"},'
+            '"courses":[{"course_name":"Mathematics","period":"T1",'
+            '"credits":"1.00","status":"final",'
+            '"reported_grades":{"Eleve":"92","Classe":"84"},'
+            '"reported_attributes":{"Coef":"2"}}]}'
+        )
+        course = result["courses"][0]
+        self.assertEqual(course["period"], "T1")
+        self.assertEqual(course["credits"], "1.00")
+        self.assertEqual(course["reported_grades"]["Classe"], "84")
+        self.assertEqual(result["fields"]["school"], "Example")
+
 
 if __name__ == "__main__":
     unittest.main()

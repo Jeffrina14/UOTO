@@ -4,10 +4,19 @@ import json
 import os
 import re
 import fitz
-from pipelineUtils.prompts import load_prompts
+try:
+    from pipelineUtils.prompts import load_profile_prompts
+except ImportError:
+    from pipelineUtils.prompts import load_prompts
+
+    def load_profile_prompts(profile):
+        return load_prompts()
 from pipelineUtils.blob_functions import get_blob_content
+from pipelineUtils.document_profiles import normalize_profile_result
 from pipelineUtils.azure_openai import RequestTooLargeError, run_prompt
 from pipelineUtils.transcript_parser import (
+    EXTRA_COURSE_KEYS,
+    EXTRA_TOP_LEVEL_KEYS,
     IncompleteJSONError,
     parse_transcript_response,
 )
@@ -313,6 +322,8 @@ def _normalize_transcript_result(result, classification):
     return normalized_result
 
 
+
+
 def _polygon_to_render_rect(polygon, scale=2.0, points_per_unit=72.0):
     coordinates = list(polygon)
     if len(coordinates) < 8 or len(coordinates) % 2:
@@ -444,6 +455,16 @@ def _merge_transcript_results(results):
         merged["is_academic_record"] = (
             merged["is_academic_record"] or result.get("is_academic_record", False)
         )
+        for key in EXTRA_TOP_LEVEL_KEYS:
+            value = result.get(key)
+            if value not in (None, "", [], {}):
+                if key == "institution_context":
+                    merged.setdefault(key, [])
+                    for item in value:
+                        if item not in merged[key]:
+                            merged[key].append(item)
+                elif key not in merged or merged[key] in (None, "", [], {}):
+                    merged[key] = value
         for course in result.get("courses", []):
             identity = _course_identity(course)
             if identity not in seen_courses:
@@ -696,7 +717,7 @@ def _extract_chunked_transcript(
                     "course_code",
                     "grade",
                     "notes",
-                )}
+                ) + EXTRA_COURSE_KEYS if key in course}
                 for course in indexed_courses
             ]
             chunk_results.append(first_pass_result)
@@ -727,6 +748,20 @@ def convert_to_base64_images(blob_input: dict, blob_content: bytes):
         "Supported extensions are PDF, PNG, JPG, JPEG, TIFF, and BMP."
     )
 
+
+def extract_header_identity_crop(blob_input: dict, blob_content: bytes):
+    """Return a high-resolution crop of the first PDF header for issuer reading."""
+    if os.path.splitext(blob_input.get("name") or "")[1].lower() != ".pdf":
+        return None
+
+    with fitz.open(stream=blob_content, filetype="pdf") as document:
+        if not document:
+            return None
+        page = document[0]
+        header = fitz.Rect(0, 0, page.rect.width, page.rect.height * 0.3)
+        pix = page.get_pixmap(matrix=fitz.Matrix(4, 4), clip=header, alpha=False)
+        return base64.b64encode(pix.tobytes("png")).decode("ascii")
+
 @bp.function_name(name)
 @bp.activity_trigger(input_name="blob_input")
 def run(blob_input: dict):
@@ -741,10 +776,19 @@ def run(blob_input: dict):
     )
     base64_images = convert_to_base64_images(blob_input, blob_content)
 
-    prompt_json = load_prompts()
+    prompt_json = load_profile_prompts(blob_input.get("profile", "UNKNOWN"))
     classification = _classify_document_pages(base64_images, instance_id)
     document_context = _format_extraction_context(classification)
     user_prompt = prompt_json["user_prompt"]
+    header_crop = extract_header_identity_crop(blob_input, blob_content)
+    if header_crop:
+        base64_images = [header_crop] + base64_images
+        user_prompt = (
+            f"{user_prompt}\n\n"
+            "The first supplied image is an enlarged crop of the first-page header. "
+            "Use it only to identify the issuing institution and any visibly printed "
+            "location, country, or website. Do not create course rows from this crop."
+        )
     if (
         _table_cropping_enabled()
         and os.path.splitext(blob_name or "")[1].lower() == ".pdf"
@@ -769,4 +813,7 @@ def run(blob_input: dict):
         verify=_verification_enabled(),
     )
 
+    merged_result = normalize_profile_result(
+        merged_result, blob_input.get("profile", "UNKNOWN")
+    )
     return json.dumps(merged_result, ensure_ascii=False)

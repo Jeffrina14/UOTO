@@ -20,5 +20,7 @@ azd env get-values | ForEach-Object {
 
 # Upload initial prompt file
 az storage blob upload --account-name $env:AZURE_STORAGE_ACCOUNT --container-name "prompts" --name prompts.yaml --file ./data/prompts.yaml --auth-mode login
+az storage blob upload --account-name $env:AZURE_STORAGE_ACCOUNT --container-name "prompts" --name sus.yaml --file ./data/sus.yaml --auth-mode login
+az storage blob upload --account-name $env:AZURE_STORAGE_ACCOUNT --container-name "prompts" --name ebf.yaml --file ./data/ebf.yaml --auth-mode login
 
 Write-Host "Post-provision complete."

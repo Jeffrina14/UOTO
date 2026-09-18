@@ -50,3 +50,17 @@ def load_prompts():
             raise KeyError(f"Missing required prompt key: {key}")
 
     return prompts
+
+
+def load_profile_prompts(profile):
+    """Load the prompt file selected for one document profile."""
+    profile = str(profile or "UNKNOWN").upper()
+    prompt_file = config.get_value(
+        f"PROMPT_FILE_{profile}",
+        "prompts.yaml" if profile == "UNKNOWN" else f"{profile.lower()}.yaml",
+    )
+    prompts = load_prompts_from_blob(prompt_file)
+    for key in ("system_prompt", "user_prompt"):
+        if key not in prompts:
+            raise KeyError(f"Missing required prompt key: {key} in {prompt_file}")
+    return prompts

@@ -6,10 +6,22 @@ import azure.durable_functions as df
 from azure.durable_functions import RetryOptions
 
 
-from activities import runDocIntel, callAiFoundry, writeToBlob, speechToText, callFoundryMultiModal
+from activities import (
+    runDocIntel,
+    callAiFoundry,
+    writeToBlob,
+    speechToText,
+    callFoundryMultiModal,
+    readTranscriptOutput,
+    accreditationLookup,
+    writeAccreditation,
+    updateAccreditationSummary,
+)
 from configuration import Configuration
 
+from pipelineUtils.accreditation import is_transcript_output_name
 from pipelineUtils.blob_functions import BlobMetadata
+from pipelineUtils.document_profiles import profile_for_blob
 from pipelineUtils.transcript_parser import parse_transcript_response
 
 config = Configuration()
@@ -35,13 +47,14 @@ async def _handle_blob_trigger(
         container="bronze",
         uri=blob.uri
     )
+    blob_metadata.profile = profile_for_blob(blob.name)
     logging.info(f"Blob Metadata: {blob_metadata}")
     logging.info(f"Blob Metadata JSON: {blob_metadata.to_dict()}")
     instance_id = await client.start_new("process_blob", client_input=blob_metadata.to_dict())
     logging.info(f"Started orchestration {instance_id} for blob {blob.name}")
 
 
-# Production: polling-based blob trigger
+# Bronze storage trigger. Azure Functions monitors the bronze container for new blobs.
 @app.function_name(name="start_orchestrator_on_blob")
 @app.blob_trigger(
     arg_name="blob",
@@ -56,8 +69,39 @@ async def start_orchestrator_blob(
     await _handle_blob_trigger(blob, client)
 
 
+# Second stage: accreditation research, triggered by completed transcripts.
+@app.function_name(name="start_accreditation_on_silver")
+@app.blob_trigger(
+    arg_name="blob",
+    path="silver/{name}",
+    connection="DataStorage",
+)
+@app.durable_client_input(client_name="client")
+async def start_accreditation_blob(
+    blob: func.InputStream,
+    client: df.DurableOrchestrationClient,
+):
+    if config.get_value("ACCREDITATION_ENABLED", "false").lower() != "true":
+        return
+    if not is_transcript_output_name(blob.name):
+        return
+
+    blob_metadata = BlobMetadata(
+        name=blob.name,
+        container="silver",
+        uri=blob.uri,
+        profile=profile_for_blob(blob.name),
+    )
+    instance_id = await client.start_new(
+        "process_accreditation", client_input=blob_metadata.to_dict()
+    )
+    logging.info(
+        f"Started accreditation orchestration {instance_id} for blob {blob.name}"
+    )
+
+
 # An HTTP-triggered function with a Durable Functions client binding
-@app.route(route="client")
+@app.route(route="client", methods=["POST"])
 @app.durable_client_input(client_name="client")
 async def start_orchestrator_http(req: func.HttpRequest, client):
     """
@@ -83,7 +127,8 @@ async def start_orchestrator_http(req: func.HttpRequest, client):
     blob_input = {
         "name": blob_name,
         "container": "bronze",
-        "uri": blob_uri
+        "uri": blob_uri,
+        "profile": profile_for_blob(blob_name),
     }
 
     #invoke the process_blob function with the list of blobs
@@ -133,13 +178,18 @@ def process_blob(context):
             "name": blob_input.get("name"),
             "container": blob_input.get("container"),
             "uri": blob_input.get("uri"),
-            "instance_id": sub_orchestration_id
+            "instance_id": sub_orchestration_id,
+            "profile": blob_input.get("profile", profile_for_blob(blob_name)),
         }
 
         raw_multimodal_result = yield context.call_activity_with_retry(
             "callAoaiMultiModal", retry_options, aoai_input
         )
         validated_multimodal_result = parse_transcript_response(raw_multimodal_result)
+        validated_multimodal_result["processing"] = {
+            "profile": blob_input.get("profile", profile_for_blob(blob_name)),
+            "routing_source": "filename",
+        }
         final_result = json.dumps(
             validated_multimodal_result,
             ensure_ascii=False,
@@ -203,8 +253,63 @@ def process_blob(context):
         "task_result": task_result
     }   
 
+
+# Second stage sub orchestrator: silver transcript -> gold accreditation result.
+@app.function_name(name="process_accreditation")
+@app.orchestration_trigger(context_name="context")
+def process_accreditation(context):
+    blob_input = context.get_input()
+    blob_name = blob_input.get("name", "")
+    container = blob_input.get("container", "silver")
+
+    retry_options = RetryOptions(
+        first_retry_interval_in_milliseconds=5000,
+        max_number_of_attempts=3
+    )
+
+    transcript_info = yield context.call_activity_with_retry(
+        "readTranscriptOutput",
+        retry_options,
+        {"blob_name": blob_name, "container": container},
+    )
+
+    institutions = transcript_info.get("institutions") or []
+    lookups = [
+        context.call_activity_with_retry(
+            "accreditationLookup",
+            retry_options,
+            {"institution": institution, "instance_id": context.instance_id},
+        )
+        for institution in institutions
+    ]
+    results = (yield context.task_all(lookups)) if lookups else []
+
+    write_result = yield context.call_activity_with_retry(
+        "writeAccreditation",
+        retry_options,
+        {
+            "blob_name": blob_name,
+            "institutions": results,
+            "truncated": transcript_info.get("truncated", False),
+        },
+    )
+    summary_result = yield context.call_activity_with_retry(
+        "updateAccreditationSummary", retry_options, {}
+    )
+
+    return {
+        "blob": blob_input,
+        "institution_count": len(results),
+        "write_result": write_result,
+        "summary_result": summary_result,
+    }
+
 app.register_functions(runDocIntel.bp)
 app.register_functions(callAiFoundry.bp)
 app.register_functions(writeToBlob.bp)
 app.register_functions(speechToText.bp)
 app.register_functions(callFoundryMultiModal.bp)
+app.register_functions(readTranscriptOutput.bp)
+app.register_functions(accreditationLookup.bp)
+app.register_functions(writeAccreditation.bp)
+app.register_functions(updateAccreditationSummary.bp)
